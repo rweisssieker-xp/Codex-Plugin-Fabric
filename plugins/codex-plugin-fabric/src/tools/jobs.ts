@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { classifyFabricError } from "../diagnostics.js";
 import { validateMutationGuard } from "../guards.js";
+import { evaluatePolicy } from "../policy.js";
 import { ToolContext } from "./context.js";
 import { safeTool, UuidSchema } from "./toolUtils.js";
 
@@ -26,20 +27,29 @@ export function registerJobTools(server: McpServer, context: ToolContext): void 
     },
     (input) =>
       safeTool(async () => {
+        const policy = await context.policy.load();
+        const payloadBytes = Buffer.byteLength(JSON.stringify(input.payload ?? {}), "utf8");
         const guard = validateMutationGuard({
           ...input,
           actualWorkspaceId: input.workspaceId
         });
-        if (!guard.allowed) {
+        const policyEvaluation = evaluatePolicy(policy, {
+          ...input,
+          action: "runItemJob",
+          actualWorkspaceId: input.workspaceId,
+          payloadBytes
+        });
+        const blockers = [...new Set([...guard.blockers, ...policyEvaluation.blockers])];
+        if (!guard.allowed || !policyEvaluation.allowed) {
           await context.audit.append({
             timestamp: new Date().toISOString(),
             tool: "fabric_run_item_job",
             target: { workspaceId: input.workspaceId, itemId: input.itemId, jobType: input.jobType },
             status: "blocked",
             input,
-            error: guard.blockers
+            error: blockers
           });
-          return { blocked: true, blockers: guard.blockers };
+          return { blocked: true, blockers, policyWarnings: policyEvaluation.warnings };
         }
 
         await context.audit.append({

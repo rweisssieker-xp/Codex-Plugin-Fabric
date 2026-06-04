@@ -5,6 +5,7 @@ import { AuditLog } from "./audit.js";
 import { MsalTokenProvider } from "./auth.js";
 import { loadConfig } from "./config.js";
 import { FabricClient } from "./fabricClient.js";
+import { PolicyStore } from "./policy.js";
 import { LocalState } from "./state.js";
 import { ToolContext } from "./tools/context.js";
 import { registerDeploymentTools } from "./tools/deployment.js";
@@ -19,7 +20,8 @@ const client = new FabricClient(config, tokenProvider);
 const context: ToolContext = {
   client,
   audit: new AuditLog(config.auditLogPath),
-  state: new LocalState(config.stateDir)
+  state: new LocalState(config.stateDir),
+  policy: new PolicyStore(config)
 };
 
 const server = new McpServer({

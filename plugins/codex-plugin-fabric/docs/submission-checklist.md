@@ -5,6 +5,7 @@
 - [x] Plugin lives under `plugins/codex-plugin-fabric`
 - [x] Plugin manifest lives at `plugins/codex-plugin-fabric/.codex-plugin/plugin.json`
 - [x] MCP config lives at `plugins/codex-plugin-fabric/.mcp.json`
+- [x] Bundled skill lives at `plugins/codex-plugin-fabric/skills/fabric-operator/SKILL.md`
 - [x] Repo marketplace file lives at `.agents/plugins/marketplace.json`
 - [x] Marketplace entry points to `./plugins/codex-plugin-fabric`
 
@@ -15,6 +16,7 @@
 - [x] `description` is present
 - [x] `author.name` is present
 - [x] `mcpServers` points to `./.mcp.json`
+- [x] `skills` points to `./skills/`
 - [x] `interface.displayName` is present
 - [x] `interface.shortDescription` is under marketplace length expectations
 - [x] `interface.longDescription` explains the value clearly
@@ -25,6 +27,7 @@
 
 - [x] `npm run build`
 - [x] `npm test`
+- [x] `npm run smoke`
 - [x] Plugin validator passes
 - [x] `npm audit --omit=dev` reports no vulnerabilities
 
@@ -44,7 +47,7 @@
 
 ## Recommended Before Public Submission
 
-- [ ] Add project logo and composer icon under `assets/`
-- [ ] Add screenshots or terminal capture images
+- [x] Add project logo and composer icon under `assets/`
+- [x] Add screenshots or terminal capture images
 - [ ] Run live Fabric smoke test with a non-production workspace
 - [ ] Confirm Microsoft Fabric API permissions for target users

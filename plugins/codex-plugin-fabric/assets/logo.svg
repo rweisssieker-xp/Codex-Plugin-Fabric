@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-label="Microsoft Fabric Control logo">
+  <rect width="960" height="320" rx="32" fill="#0f172a"/>
+  <g transform="translate(48 62)">
+    <path d="M0 58h126l58 58-58 58H0l58-58L0 58Z" fill="#2563eb"/>
+    <path d="M49 86h73l36 36-36 36H49l36-36-36-36Z" fill="#38bdf8"/>
+    <circle cx="92" cy="122" r="27" fill="#f8fafc"/>
+    <path d="M81 122l9 9 20-24" fill="none" stroke="#0f172a" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="260" y="136" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700">Microsoft Fabric Control</text>
+  <text x="262" y="188" fill="#94a3b8" font-family="Arial, Helvetica, sans-serif" font-size="24">Safe Codex control plane for Fabric operations</text>
+</svg>

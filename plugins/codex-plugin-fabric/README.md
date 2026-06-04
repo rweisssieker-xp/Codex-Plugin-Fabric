@@ -33,6 +33,8 @@ Secrets are read only from environment variables. They are never written to sour
 
 ## MCP Tools
 
+The plugin also bundles the `fabric-operator` skill, which guides Codex through inventory-first Fabric operations, deployment preflight, guarded execution, diagnostics, and audit review.
+
 Inventory:
 
 - `fabric_list_workspaces`
@@ -65,6 +67,7 @@ Intelligence and local governance:
 - `fabric_generate_runbook`
 - `fabric_classify_risk`
 - `fabric_get_audit_log`
+- `fabric_get_policy`
 - `fabric_remember_environment`
 - `fabric_list_known_environments`
 
@@ -84,4 +87,5 @@ Read-only tools run directly. Mutating tools require `confirm: true`, an `enviro
 
 ```powershell
 npm test
+npm run smoke
 ```

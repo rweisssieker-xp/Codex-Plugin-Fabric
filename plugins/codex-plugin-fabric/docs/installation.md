@@ -44,6 +44,22 @@ export FABRIC_CLIENT_ID=<app-id>
 export FABRIC_CLIENT_SECRET=<secret>
 ```
 
+## Optional Local Policy
+
+Copy the example policy and tune it for your environment:
+
+```bash
+cp fabric-policy.example.json fabric-policy.json
+export FABRIC_POLICY_PATH=fabric-policy.json
+```
+
+On PowerShell:
+
+```powershell
+Copy-Item fabric-policy.example.json fabric-policy.json
+$env:FABRIC_POLICY_PATH = "fabric-policy.json"
+```
+
 ## Build
 
 ```bash
@@ -94,4 +110,3 @@ Use Microsoft Fabric Control to list my Fabric workspaces.
 ```
 
 If auth is not configured, the plugin should return a clear local auth error instead of leaking secrets.
-

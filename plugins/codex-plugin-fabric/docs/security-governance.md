@@ -38,6 +38,14 @@ Production-like labels also require:
 - `allowProduction: true`
 - `preflightPassed: true`
 
+## Local Policy File
+
+Teams can provide `FABRIC_POLICY_PATH` to load a local `fabric-policy.json`. The policy can restrict workspace IDs, pipeline IDs, maximum deployment item count, maximum job payload size, blocked item types, and production preflight requirements.
+
+The repository includes `fabric-policy.example.json`.
+
+Use `fabric_get_policy` to confirm which policy is active at runtime.
+
 ## Audit Logging
 
 Mutating actions are logged locally as JSONL. Audit records include:
@@ -73,4 +81,3 @@ Diagnostics and risk classification use categories such as:
 - Validation
 - Timeout
 - OperationFailure
-

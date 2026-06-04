@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "productionLabels": ["prod", "production", "prd", "live"],
+  "maxDeploymentItems": 25,
+  "maxJobPayloadBytes": 65536,
+  "requirePreflightForProduction": true,
+  "requireExpectedTargetForMutation": true,
+  "allowedWorkspaceIds": [],
+  "allowedPipelineIds": [],
+  "blockedItemTypes": [],
+  "environmentAliases": {
+    "dev": ["development", "sandbox"],
+    "test": ["qa", "uat"],
+    "production": ["prod", "prd", "live"]
+  }
+}

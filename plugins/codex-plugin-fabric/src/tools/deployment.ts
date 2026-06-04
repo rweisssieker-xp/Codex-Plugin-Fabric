@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateMutationGuard } from "../guards.js";
+import { evaluatePolicy } from "../policy.js";
 import { classifyRisk } from "../risk.js";
 import { ToolContext } from "./context.js";
 import { safeTool, UuidSchema, valuesArray } from "./toolUtils.js";
@@ -81,22 +82,42 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
         });
         const items = valuesArray(itemsResponse.data);
         const selectedItemCount = itemIds?.length ?? items.length;
+        const selectedTypes = extractItemTypes(items, itemIds);
+        const policy = await context.policy.load();
+        const policyEvaluation = evaluatePolicy(policy, {
+          action: "deploy",
+          environmentLabel,
+          expectedPipelineId,
+          actualPipelineId: deploymentPipelineId,
+          expectedWorkspaceId,
+          actualWorkspaceId: stageWorkspaceId,
+          allowProduction,
+          preflightPassed: true,
+          itemCount: selectedItemCount,
+          itemTypes: selectedTypes
+        });
         const risk = classifyRisk({
           action: "deploy",
           environmentLabel,
           itemCount: selectedItemCount,
           hasExpectedTarget: Boolean(expectedPipelineId || expectedWorkspaceId),
           hasPreflight: true,
-          blockers: guard.blockers
+          blockers: [...guard.blockers, ...policyEvaluation.blockers]
         });
         return {
-          passed: guard.allowed && risk.blockers.length === 0,
+          passed: guard.allowed && policyEvaluation.allowed && risk.blockers.length === 0,
           deploymentPipelineId,
           stageId,
           stage,
           selectedItemCount,
+          selectedTypes,
+          policy: {
+            warnings: policyEvaluation.warnings,
+            blockers: policyEvaluation.blockers,
+            maxDeploymentItems: policy.maxDeploymentItems
+          },
           risk,
-          blockers: [...new Set([...guard.blockers, ...risk.blockers])]
+          blockers: [...new Set([...guard.blockers, ...policyEvaluation.blockers, ...risk.blockers])]
         };
       })
   );
@@ -113,20 +134,28 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
     },
     (input) =>
       safeTool(async () => {
+        const policy = await context.policy.load();
         const guard = validateMutationGuard({
           ...input,
           actualPipelineId: input.deploymentPipelineId
         });
-        if (!guard.allowed) {
+        const policyEvaluation = evaluatePolicy(policy, {
+          ...input,
+          action: "deploy",
+          actualPipelineId: input.deploymentPipelineId,
+          itemCount: input.itemIds?.length ?? 0
+        });
+        const blockers = [...new Set([...guard.blockers, ...policyEvaluation.blockers])];
+        if (!guard.allowed || !policyEvaluation.allowed) {
           await context.audit.append({
             timestamp: new Date().toISOString(),
             tool: "fabric_deploy_stage_content",
             target: { deploymentPipelineId: input.deploymentPipelineId, stageId: input.stageId },
             status: "blocked",
             input,
-            error: guard.blockers
+            error: blockers
           });
-          return { blocked: true, blockers: guard.blockers };
+          return { blocked: true, blockers, policyWarnings: policyEvaluation.warnings };
         }
 
         const body = input.itemIds ? { items: input.itemIds.map((itemId) => ({ itemId })) } : {};
@@ -169,6 +198,24 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
     { operationId: z.string().min(1) },
     ({ operationId }) => safeTool(async () => (await context.client.request(`/operations/${operationId}/result`)).data)
   );
+}
+
+function extractItemTypes(items: unknown[], selectedItemIds?: string[]): string[] {
+  const selected = selectedItemIds ? new Set(selectedItemIds) : undefined;
+  return items
+    .filter((item) => {
+      if (!selected) return true;
+      const id = typeof item === "object" && item !== null ? (item as Record<string, unknown>).id : undefined;
+      return typeof id === "string" && selected.has(id);
+    })
+    .map((item) => {
+      const record = item as Record<string, unknown>;
+      return typeof record.itemType === "string"
+        ? record.itemType
+        : typeof record.type === "string"
+          ? record.type
+          : "Unknown";
+    });
 }
 
 function readOperationId(data: unknown): string | undefined {

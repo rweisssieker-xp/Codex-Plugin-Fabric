@@ -22,6 +22,12 @@ Data
 
 Microsoft Fabric, Power BI, Lakehouse, Warehouse, Data Pipeline, Deployment Pipeline, MCP, Codex, DataOps, Governance, Audit, Diagnostics
 
+## Visual Assets
+
+- Composer icon: `assets/icon.svg`
+- Logo: `assets/logo.svg`
+- Screenshots: `assets/screenshot-1.png`, `assets/screenshot-2.png`, `assets/screenshot-3.png`
+
 ## Install Command
 
 ```bash
@@ -58,4 +64,3 @@ Microsoft Fabric Control is the safety-first Fabric operator plugin for Codex: i
 ## Primary Value
 
 Fabric teams get a natural-language operator that can inspect, validate, execute, monitor, and explain Fabric operations while enforcing production-safe guardrails.
-

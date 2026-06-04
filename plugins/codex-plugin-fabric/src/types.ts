@@ -10,6 +10,7 @@ export interface FabricConfig {
   baseUrl: string;
   stateDir: string;
   auditLogPath: string;
+  policyPath?: string;
 }
 
 export interface FabricErrorDetails {

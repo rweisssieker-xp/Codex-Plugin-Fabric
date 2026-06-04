@@ -1,5 +1,7 @@
 # Tool Catalog
 
+The plugin also bundles the `fabric-operator` skill. Use it when a user asks Codex to inspect, deploy, diagnose, or govern Microsoft Fabric.
+
 ## Inventory
 
 ### `fabric_list_workspaces`
@@ -72,13 +74,17 @@ Classifies and explains a failed job instance.
 
 ## Intelligence
 
+### `fabric_get_item_definition`
+
+Gets a Fabric item definition through the Fabric getDefinition API and can decode base64 definition parts. This improves graph and blast-radius accuracy when item definitions expose referenced IDs.
+
 ### `fabric_build_dependency_graph`
 
-Builds a heuristic dependency graph from workspace items.
+Builds a dependency graph from workspace items. By default it uses type-based inferred relationships. With `includeDefinitions: true`, it also reads supported item definitions and adds observed `definition-reference` edges.
 
 ### `fabric_analyze_blast_radius`
 
-Analyzes likely downstream impact for changed item IDs.
+Analyzes likely downstream impact for changed item IDs. With `includeDefinitions: true`, blast-radius analysis uses observed definition references where available.
 
 ### `fabric_classify_risk`
 
@@ -89,6 +95,10 @@ Classifies action risk from environment label, item count, preflight state, and 
 Generates a Markdown runbook from action context, preflight results, diagnostics, or operation output.
 
 ## Governance
+
+### `fabric_get_policy`
+
+Reads the active local Fabric policy used by deployment and job guardrails.
 
 ### `fabric_get_audit_log`
 
@@ -101,4 +111,3 @@ Stores a non-sensitive local mapping between environment labels and Fabric targe
 ### `fabric_list_known_environments`
 
 Lists locally remembered environments.
-

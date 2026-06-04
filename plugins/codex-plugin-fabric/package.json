@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "npm run build && node --test dist/**/*.test.js"
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "smoke": "npm run build && node scripts/smoke-mcp.mjs"
   },
   "dependencies": {
     "@azure/msal-node": "^5.2.2",

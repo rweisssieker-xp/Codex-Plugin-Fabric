@@ -1,30 +1,78 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { analyzeBlastRadius, buildDependencyGraphFromItems } from "../graph.js";
+import {
+  analyzeBlastRadius,
+  buildDependencyGraphFromItems,
+  decodeDefinitionPayloads,
+  enrichGraphFromDefinitions
+} from "../graph.js";
 import { classifyRisk } from "../risk.js";
 import { ToolContext } from "./context.js";
 import { safeTool, UuidSchema, valuesArray } from "./toolUtils.js";
 
 export function registerIntelligenceTools(server: McpServer, context: ToolContext): void {
   server.tool(
+    "fabric_get_item_definition",
+    "Get a Fabric item definition and optionally decode base64 definition parts.",
+    {
+      workspaceId: UuidSchema,
+      itemId: UuidSchema,
+      format: z.string().optional(),
+      decodePayloads: z.boolean().optional().default(true),
+      timeoutMs: z.number().int().positive().max(900000).optional().default(300000)
+    },
+    ({ workspaceId, itemId, format, decodePayloads, timeoutMs }) =>
+      safeTool(async () => {
+        const response = await context.client.request(`/workspaces/${workspaceId}/items/${itemId}/getDefinition`, {
+          method: "POST",
+          query: { format }
+        });
+        const operationId = response.operationId ?? readOperationId(response.data);
+        const resolved = operationId ? await context.client.pollOperation(operationId, timeoutMs) : response;
+        return {
+          operationId,
+          definition: decodePayloads ? decodeDefinitionPayloads(resolved.data) : resolved.data
+        };
+      })
+  );
+
+  server.tool(
     "fabric_build_dependency_graph",
-    "Build a heuristic Fabric dependency graph from workspace items.",
-    { workspaceId: UuidSchema },
-    ({ workspaceId }) =>
+    "Build a Fabric dependency graph from workspace items and optional item definitions.",
+    {
+      workspaceId: UuidSchema,
+      includeDefinitions: z.boolean().optional().default(false),
+      maxDefinitions: z.number().int().positive().max(100).optional().default(25)
+    },
+    ({ workspaceId, includeDefinitions, maxDefinitions }) =>
       safeTool(async () => {
         const response = await context.client.request(`/workspaces/${workspaceId}/items`);
-        return buildDependencyGraphFromItems(valuesArray(response.data), workspaceId);
+        const items = valuesArray(response.data);
+        const graph = buildDependencyGraphFromItems(items, workspaceId);
+        if (!includeDefinitions) return graph;
+        const definitions = await fetchDefinitions(context, workspaceId, items.slice(0, maxDefinitions));
+        return enrichGraphFromDefinitions(graph, definitions);
       })
   );
 
   server.tool(
     "fabric_analyze_blast_radius",
     "Analyze likely downstream impact for changed Fabric item IDs.",
-    { workspaceId: UuidSchema, changedItemIds: z.array(UuidSchema).min(1) },
-    ({ workspaceId, changedItemIds }) =>
+    {
+      workspaceId: UuidSchema,
+      changedItemIds: z.array(UuidSchema).min(1),
+      includeDefinitions: z.boolean().optional().default(false),
+      maxDefinitions: z.number().int().positive().max(100).optional().default(25)
+    },
+    ({ workspaceId, changedItemIds, includeDefinitions, maxDefinitions }) =>
       safeTool(async () => {
         const response = await context.client.request(`/workspaces/${workspaceId}/items`);
-        const graph = buildDependencyGraphFromItems(valuesArray(response.data), workspaceId);
+        const items = valuesArray(response.data);
+        let graph = buildDependencyGraphFromItems(items, workspaceId);
+        if (includeDefinitions) {
+          const definitions = await fetchDefinitions(context, workspaceId, items.slice(0, maxDefinitions));
+          graph = enrichGraphFromDefinitions(graph, definitions);
+        }
         return analyzeBlastRadius(graph, changedItemIds);
       })
   );
@@ -77,4 +125,29 @@ export function registerIntelligenceTools(server: McpServer, context: ToolContex
         return { markdown: sections.join("\n\n") };
       })
   );
+}
+
+async function fetchDefinitions(context: ToolContext, workspaceId: string, items: unknown[]) {
+  const definitions: Array<{ itemId: string; definition: unknown }> = [];
+  for (const item of items) {
+    const itemId = typeof item === "object" && item !== null ? (item as Record<string, unknown>).id : undefined;
+    if (typeof itemId !== "string") continue;
+    try {
+      const response = await context.client.request(`/workspaces/${workspaceId}/items/${itemId}/getDefinition`, {
+        method: "POST"
+      });
+      const operationId = response.operationId ?? readOperationId(response.data);
+      const resolved = operationId ? await context.client.pollOperation(operationId, 300000) : response;
+      definitions.push({ itemId, definition: decodeDefinitionPayloads(resolved.data) });
+    } catch {
+      // Not all item types support definitions. Graph construction stays best-effort.
+    }
+  }
+  return definitions;
+}
+
+function readOperationId(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const record = data as Record<string, unknown>;
+  return typeof record.operationId === "string" ? record.operationId : undefined;
 }

@@ -4,6 +4,10 @@ import { ToolContext } from "./context.js";
 import { safeTool, UuidSchema } from "./toolUtils.js";
 
 export function registerGovernanceTools(server: McpServer, context: ToolContext): void {
+  server.tool("fabric_get_policy", "Read the active local Fabric policy used by guardrails.", {}, () =>
+    safeTool(async () => context.policy.load())
+  );
+
   server.tool(
     "fabric_get_audit_log",
     "Read recent local audit log entries for mutating Fabric actions.",

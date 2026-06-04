@@ -23,6 +23,7 @@ export function loadConfig(): FabricConfig {
     clientSecret: env("FABRIC_CLIENT_SECRET"),
     baseUrl: env("FABRIC_BASE_URL") ?? "https://api.fabric.microsoft.com/v1",
     stateDir,
-    auditLogPath
+    auditLogPath,
+    policyPath: env("FABRIC_POLICY_PATH")
   };
 }

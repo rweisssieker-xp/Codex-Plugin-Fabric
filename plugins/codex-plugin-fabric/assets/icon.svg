@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Microsoft Fabric Control icon">
+  <rect width="256" height="256" rx="40" fill="#0f172a"/>
+  <path d="M52 74h104l48 48-48 48H52l48-48-48-48Z" fill="#2563eb"/>
+  <path d="M91 93h60l29 29-29 29H91l29-29-29-29Z" fill="#38bdf8"/>
+  <circle cx="128" cy="122" r="22" fill="#f8fafc"/>
+  <path d="M119 122l7 7 15-18" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -23,7 +23,16 @@ Initial marketplace-ready release.
 - Runbook generation
 - Local audit logging
 - Local environment memory
+- Local policy file support
+- Runtime policy inspection tool
+- Item definition retrieval
+- Definition-aware dependency graph enrichment
+- Bundled `fabric-operator` skill
+- MCP tool-list smoke test
+- GitHub Actions CI workflow
 - Marketplace manifest
+- Marketplace icon and logo
+- Marketplace screenshots
 - US-English documentation and marketing kit
 
 ### Security
@@ -32,4 +41,3 @@ Initial marketplace-ready release.
 - Production guardrails
 - Target binding for mutating actions
 - No destructive V1 tools
-
