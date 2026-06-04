@@ -1,0 +1,40 @@
+{
+  "name": "codex-plugin-fabric",
+  "version": "0.1.0",
+  "description": "Codex MCP plugin for safe Microsoft Fabric inventory, deployment control, run diagnostics, guardrails, and audit logging.",
+  "author": {
+    "name": "Fabric Control Contributors"
+  },
+  "homepage": "https://www.codex-marketplace.com/",
+  "license": "MIT",
+  "keywords": [
+    "microsoft-fabric",
+    "data-platform",
+    "deployment",
+    "mcp",
+    "codex",
+    "governance"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Microsoft Fabric Control",
+    "shortDescription": "Safe Codex control plane for Microsoft Fabric.",
+    "longDescription": "Local MCP plugin for Microsoft Fabric inventory, deployment control, job runs, diagnostics, guardrails, audit logging, and lightweight dependency intelligence.",
+    "developerName": "Fabric Control Contributors",
+    "category": "Data",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Interactive"
+    ],
+    "defaultPrompt": [
+      "List my Fabric workspaces.",
+      "Preflight a Fabric deployment.",
+      "Diagnose a failed Fabric run."
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./plugins/codex-plugin-fabric/assets/icon.svg",
+    "logo": "./plugins/codex-plugin-fabric/assets/logo.svg"
+  }
+}

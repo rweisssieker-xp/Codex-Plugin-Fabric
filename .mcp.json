@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "fabric-control": {
+      "command": "node",
+      "args": [
+        "plugins/codex-plugin-fabric/dist/server.js"
+      ]
+    }
+  }
+}

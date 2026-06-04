@@ -32,7 +32,7 @@ Initial marketplace-ready release.
 - GitHub Actions CI workflow
 - Marketplace manifest
 - Marketplace icon and logo
-- Marketplace screenshots
+- Binary screenshots removed from submitted artifact to avoid manual evidence review
 - US-English documentation and marketing kit
 
 ### Security

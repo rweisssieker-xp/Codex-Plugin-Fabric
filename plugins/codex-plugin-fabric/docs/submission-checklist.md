@@ -48,6 +48,6 @@
 ## Recommended Before Public Submission
 
 - [x] Add project logo and composer icon under `assets/`
-- [x] Add screenshots or terminal capture images
+- [x] Avoid binary screenshots in the submitted artifact
 - [ ] Run live Fabric smoke test with a non-production workspace
 - [ ] Confirm Microsoft Fabric API permissions for target users

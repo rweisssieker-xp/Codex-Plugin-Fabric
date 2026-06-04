@@ -3,4 +3,5 @@ dist/
 .env
 .fabric-plugin/
 npm-debug.log*
-
+plugins/codex-plugin-fabric/node_modules/
+plugins/codex-plugin-fabric/dist/

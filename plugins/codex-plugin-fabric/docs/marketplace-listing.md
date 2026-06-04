@@ -26,7 +26,6 @@ Microsoft Fabric, Power BI, Lakehouse, Warehouse, Data Pipeline, Deployment Pipe
 
 - Composer icon: `assets/icon.svg`
 - Logo: `assets/logo.svg`
-- Screenshots: `assets/screenshot-1.png`, `assets/screenshot-2.png`, `assets/screenshot-3.png`
 
 ## Install Command
 
