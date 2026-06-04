@@ -1,0 +1,21 @@
+{
+  "name": "fabric-control-marketplace",
+  "interface": {
+    "displayName": "Fabric Control Marketplace"
+  },
+  "plugins": [
+    {
+      "name": "codex-plugin-fabric",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-plugin-fabric"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Data"
+    }
+  ]
+}
+

@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.env
+.fabric-plugin/
+npm-debug.log*

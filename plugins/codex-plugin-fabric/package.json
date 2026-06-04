@@ -1,0 +1,26 @@
+{
+  "name": "codex-plugin-fabric",
+  "version": "0.1.0",
+  "description": "Local Codex MCP plugin for safe Microsoft Fabric control, deployment diagnostics, guardrails, and audit logging.",
+  "type": "module",
+  "bin": {
+    "codex-plugin-fabric": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "test": "npm run build && node --test dist/**/*.test.js"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^5.2.2",
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
