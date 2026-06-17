@@ -46,6 +46,18 @@ The repository includes `fabric-policy.example.json`.
 
 Use `fabric_get_policy` to confirm which policy is active at runtime.
 
+Additional policy controls include guarded Git mutations, admin preview enablement, allowed Git providers, allowed connection IDs, allowed gateway IDs, clean-Git-before-deployment requirements, and maximum definition diff size.
+
+Learning policy controls include local learning enablement, task-memory enablement, maximum learning payload size, evidence export permission, retention window, and minimum confidence for policy suggestions.
+
+## Admin Preview APIs
+
+Admin tools are read-only and blocked unless both the tool input and local policy explicitly enable admin preview mode. This keeps preview tenant-wide APIs separated from normal operator workflows.
+
+## Git Mutations
+
+Git connect, disconnect, commit, and update-from-Git are treated as mutating operations. They require confirmation, target binding, and policy approval.
+
 ## Audit Logging
 
 Mutating actions are logged locally as JSONL. Audit records include:
@@ -58,6 +70,21 @@ Mutating actions are logged locally as JSONL. Audit records include:
 - operation ID
 - redacted input
 - redacted error
+
+## Governed Local Learning
+
+The learning layer stores structured local evidence only:
+
+- task memories
+- redacted learning events
+- explicit operator feedback
+- learned lessons
+- learned playbooks
+- risk observations
+
+It does not store full chat transcripts. Task memories capture concise fields such as task goal, tool sequence, decisions, outcome, lesson, `doNextTime`, and `avoidNextTime`.
+
+Learning recommendations are advisory. They cannot bypass confirmation, expected target binding, deployment preflight, `allowProduction`, admin preview gates, beta gates, or definition-apply gates. Policy suggestions are returned as recommendations only and never write `fabric-policy.json`.
 
 ## V1 Hard Blocks
 

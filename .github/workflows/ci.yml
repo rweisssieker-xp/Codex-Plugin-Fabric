@@ -20,5 +20,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run smoke
+      - run: npm run verify:marketplace
+      - run: npm run verify:endpoints
+      - run: npm run verify:all
       - run: npm audit --omit=dev
-

@@ -1,0 +1,9 @@
+
+> codex-plugin-fabric@0.1.0 smoke
+> npm run build && node scripts/smoke-mcp.mjs
+
+
+> codex-plugin-fabric@0.1.0 build
+> tsc -p tsconfig.json
+
+MCP smoke passed: 120 tools registered.

@@ -4,7 +4,6 @@ const KNOWN_TYPES = new Set(["Lakehouse", "Warehouse", "Notebook", "DataPipeline
 
 export function buildDependencyGraphFromItems(items: unknown[], workspaceId?: string): DependencyGraph {
   const nodes: GraphNode[] = [];
-  const edges: GraphEdge[] = [];
 
   for (const item of items) {
     if (!item || typeof item !== "object") continue;
@@ -16,36 +15,7 @@ export function buildDependencyGraphFromItems(items: unknown[], workspaceId?: st
     nodes.push({ id, label, type, metadata: { workspaceId, rawTypeKnown: KNOWN_TYPES.has(type) } });
   }
 
-  const lakehouses = nodes.filter((node) => node.type === "Lakehouse");
-  const warehouses = nodes.filter((node) => node.type === "Warehouse");
-  const dataSources = [...lakehouses, ...warehouses];
-
-  for (const node of nodes) {
-    if (node.type === "Notebook" || node.type === "DataPipeline" || node.type === "SemanticModel") {
-      for (const source of dataSources) {
-        edges.push({
-          from: source.id,
-          to: node.id,
-          relation: "possible-data-source",
-          confidence: "inferred",
-          reason: `${node.type} can depend on ${source.type}; Fabric API data did not expose a stronger relationship.`
-        });
-      }
-    }
-    if (node.type === "SemanticModel") {
-      for (const report of nodes.filter((candidate) => candidate.type === "Report")) {
-        edges.push({
-          from: node.id,
-          to: report.id,
-          relation: "possible-report-model",
-          confidence: "inferred",
-          reason: "Reports commonly depend on semantic models; edge is heuristic until item metadata exposes lineage."
-        });
-      }
-    }
-  }
-
-  return { nodes, edges };
+  return { nodes, edges: [] };
 }
 
 export function enrichGraphFromDefinitions(
@@ -75,6 +45,27 @@ export function enrichGraphFromDefinitions(
     }
   }
 
+  return { nodes: graph.nodes, edges };
+}
+
+export function enrichGraphFromKnownReferences(
+  graph: DependencyGraph,
+  references: Array<{ sourceId: string; targetId: string; relation: string; reason: string }>
+): DependencyGraph {
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const edges = [...graph.edges];
+  for (const reference of references) {
+    if (!nodesById.has(reference.targetId)) continue;
+    if (!edges.some((edge) => edge.from === reference.sourceId && edge.to === reference.targetId && edge.relation === reference.relation)) {
+      edges.push({
+        from: reference.sourceId,
+        to: reference.targetId,
+        relation: reference.relation,
+        confidence: "observed",
+        reason: reference.reason
+      });
+    }
+  }
   return { nodes: graph.nodes, edges };
 }
 

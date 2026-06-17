@@ -55,3 +55,39 @@ test("fabric client retries one 429 with Retry-After", async () => {
   assert.deepEqual(result.data, { ok: true });
   assert.equal(count, 2);
 });
+
+test("fabric client includes pagination token query values", async () => {
+  let requestedUrl = "";
+  const client = new FabricClient(
+    config,
+    { getAccessToken: async () => "token" },
+    async (url) => {
+      requestedUrl = url.toString();
+      return new Response(JSON.stringify({ value: [] }), { status: 200 });
+    }
+  );
+
+  await client.request("/admin/items", { query: { continuationToken: "abc" } });
+
+  assert.equal(requestedUrl, "https://api.fabric.microsoft.com/v1/admin/items?continuationToken=abc");
+});
+
+test("fabric client requestAll follows continuation tokens", async () => {
+  const requestedUrls: string[] = [];
+  const client = new FabricClient(
+    config,
+    { getAccessToken: async () => "token" },
+    async (url) => {
+      requestedUrls.push(url.toString());
+      if (!url.toString().includes("continuationToken=next")) {
+        return new Response(JSON.stringify({ value: [{ id: "1" }], continuationToken: "next" }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ value: [{ id: "2" }] }), { status: 200 });
+    }
+  );
+
+  const values = await client.requestAll<{ id: string }>("/capacities");
+
+  assert.deepEqual(values, [{ id: "1" }, { id: "2" }]);
+  assert.equal(requestedUrls[1], "https://api.fabric.microsoft.com/v1/capacities?continuationToken=next");
+});

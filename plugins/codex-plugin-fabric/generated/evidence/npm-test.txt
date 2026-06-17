@@ -1,0 +1,414 @@
+
+> codex-plugin-fabric@0.1.0 test
+> npm run build && node --test dist/**/*.test.js scripts/*.test.mjs
+
+
+> codex-plugin-fabric@0.1.0 build
+> tsc -p tsconfig.json
+
+TAP version 13
+# Subtest: definition diff detects added removed changed parts and references
+ok 1 - definition diff detects added removed changed parts and references
+  ---
+  duration_ms: 46.5514
+  type: 'test'
+  ...
+# Subtest: fabric client builds authenticated request and parses value response
+ok 2 - fabric client builds authenticated request and parses value response
+  ---
+  duration_ms: 146.7652
+  type: 'test'
+  ...
+# Subtest: fabric client retries one 429 with Retry-After
+ok 3 - fabric client retries one 429 with Retry-After
+  ---
+  duration_ms: 39.4066
+  type: 'test'
+  ...
+# Subtest: fabric client includes pagination token query values
+ok 4 - fabric client includes pagination token query values
+  ---
+  duration_ms: 4.9951
+  type: 'test'
+  ...
+# Subtest: fabric client requestAll follows continuation tokens
+ok 5 - fabric client requestAll follows continuation tokens
+  ---
+  duration_ms: 1.9706
+  type: 'test'
+  ...
+# Subtest: endpoint registry has no invalid destructive or unguarded mutating endpoints
+ok 6 - endpoint registry has no invalid destructive or unguarded mutating endpoints
+  ---
+  duration_ms: 12.2604
+  type: 'test'
+  ...
+# Subtest: endpoint registry marks definition apply as guarded mutating
+ok 7 - endpoint registry marks definition apply as guarded mutating
+  ---
+  duration_ms: 0.344
+  type: 'test'
+  ...
+# Subtest: endpoint registry includes innovation tools as non-mutating local tools
+ok 8 - endpoint registry includes innovation tools as non-mutating local tools
+  ---
+  duration_ms: 0.2805
+  type: 'test'
+  ...
+# Subtest: endpoint registry includes enterprise USP tool groups as non-mutating local tools
+ok 9 - endpoint registry includes enterprise USP tool groups as non-mutating local tools
+  ---
+  duration_ms: 0.3755
+  type: 'test'
+  ...
+# Subtest: endpoint registry includes workflow recipe tools
+ok 10 - endpoint registry includes workflow recipe tools
+  ---
+  duration_ms: 0.4559
+  type: 'test'
+  ...
+# Subtest: endpoint registry includes advanced USP tools
+ok 11 - endpoint registry includes advanced USP tools
+  ---
+  duration_ms: 0.8994
+  type: 'test'
+  ...
+# Subtest: dependency graph only creates nodes from item inventory
+ok 12 - dependency graph only creates nodes from item inventory
+  ---
+  duration_ms: 27.089
+  type: 'test'
+  ...
+# Subtest: extractReferencedIds reads plain and base64 payload references
+ok 13 - extractReferencedIds reads plain and base64 payload references
+  ---
+  duration_ms: 1.2266
+  type: 'test'
+  ...
+# Subtest: enrichGraphFromDefinitions adds observed definition-reference edge
+ok 14 - enrichGraphFromDefinitions adds observed definition-reference edge
+  ---
+  duration_ms: 0.6716
+  type: 'test'
+  ...
+# Subtest: decodeDefinitionPayloads adds decoded payload field
+ok 15 - decodeDefinitionPayloads adds decoded payload field
+  ---
+  duration_ms: 0.3312
+  type: 'test'
+  ...
+# Subtest: mutation guard blocks unconfirmed mutation
+ok 16 - mutation guard blocks unconfirmed mutation
+  ---
+  duration_ms: 3.4168
+  type: 'test'
+  ...
+# Subtest: mutation guard blocks mismatched target binding
+ok 17 - mutation guard blocks mismatched target binding
+  ---
+  duration_ms: 0.2819
+  type: 'test'
+  ...
+# Subtest: production labels require allowProduction and preflight
+ok 18 - production labels require allowProduction and preflight
+  ---
+  duration_ms: 0.241
+  type: 'test'
+  ...
+# Subtest: policy blocks non-allowlisted workspace
+ok 19 - policy blocks non-allowlisted workspace
+  ---
+  duration_ms: 3.0885
+  type: 'test'
+  ...
+# Subtest: policy blocks oversized deployments
+ok 20 - policy blocks oversized deployments
+  ---
+  duration_ms: 0.5581
+  type: 'test'
+  ...
+# Subtest: policy recognizes production aliases
+ok 21 - policy recognizes production aliases
+  ---
+  duration_ms: 0.2364
+  type: 'test'
+  ...
+# Subtest: policy blocks git mutations by default
+ok 22 - policy blocks git mutations by default
+  ---
+  duration_ms: 0.5492
+  type: 'test'
+  ...
+# Subtest: policy blocks admin preview without explicit policy flag
+ok 23 - policy blocks admin preview without explicit policy flag
+  ---
+  duration_ms: 0.2231
+  type: 'test'
+  ...
+# Subtest: policy blocks disallowed connection and gateway ids
+ok 24 - policy blocks disallowed connection and gateway ids
+  ---
+  duration_ms: 0.2783
+  type: 'test'
+  ...
+# Subtest: policy blocks beta APIs and definition apply by default
+ok 25 - policy blocks beta APIs and definition apply by default
+  ---
+  duration_ms: 0.4764
+  type: 'test'
+  ...
+# Subtest: redaction removes secrets recursively
+ok 26 - redaction removes secrets recursively
+  ---
+  duration_ms: 14.1285
+  type: 'test'
+  ...
+# Subtest: risk classifier marks production deploy without target binding high
+ok 27 - risk classifier marks production deploy without target binding high
+  ---
+  duration_ms: 9.2806
+  type: 'test'
+  ...
+# Subtest: risk classifier keeps read-like dev action low
+ok 28 - risk classifier keeps read-like dev action low
+  ---
+  duration_ms: 0.5287
+  type: 'test'
+  ...
+# Subtest: assurance score blocks high-risk changes with blockers
+ok 29 - assurance score blocks high-risk changes with blockers
+  ---
+  duration_ms: 5.2968
+  type: 'test'
+  ...
+# Subtest: policy diff identifies newly allowed and newly blocked fields
+ok 30 - policy diff identifies newly allowed and newly blocked fields
+  ---
+  duration_ms: 28.9842
+  type: 'test'
+  ...
+# Subtest: fingerprint comparison detects item and definition drift
+ok 31 - fingerprint comparison detects item and definition drift
+  ---
+  duration_ms: 4.528
+  type: 'test'
+  ...
+# Subtest: timeline sorting orders events chronologically
+ok 32 - timeline sorting orders events chronologically
+  ---
+  duration_ms: 0.3147
+  type: 'test'
+  ...
+# Subtest: root-cause ranking prioritizes repeated high-severity evidence
+ok 33 - root-cause ranking prioritizes repeated high-severity evidence
+  ---
+  duration_ms: 0.7292
+  type: 'test'
+  ...
+# Subtest: approval chain evidence detects missing required approvers
+ok 34 - approval chain evidence detects missing required approvers
+  ---
+  duration_ms: 0.609
+  type: 'test'
+  ...
+# Subtest: capacity cost forecast raises risk for paused capacity and broad action
+ok 35 - capacity cost forecast raises risk for paused capacity and broad action
+  ---
+  duration_ms: 0.7003
+  type: 'test'
+  ...
+# Subtest: sensitivity review finds credential and regulated data indicators
+ok 36 - sensitivity review finds credential and regulated data indicators
+  ---
+  duration_ms: 0.5512
+  type: 'test'
+  ...
+# Subtest: release readiness gate blocks incomplete approval and high capacity risk
+ok 37 - release readiness gate blocks incomplete approval and high capacity risk
+  ---
+  duration_ms: 1.026
+  type: 'test'
+  ...
+# Subtest: compliance evidence bundle tracks missing sections and checksums
+ok 38 - compliance evidence bundle tracks missing sections and checksums
+  ---
+  duration_ms: 3.8381
+  type: 'test'
+  ...
+# Subtest: audit anomaly detection flags production and blocked audit entries
+ok 39 - audit anomaly detection flags production and blocked audit entries
+  ---
+  duration_ms: 0.9616
+  type: 'test'
+  ...
+# Subtest: least privilege suggestions flag admin for read operations
+ok 40 - least privilege suggestions flag admin for read operations
+  ---
+  duration_ms: 0.4726
+  type: 'test'
+  ...
+# Subtest: policy exception evaluation rejects missing expiry
+ok 41 - policy exception evaluation rejects missing expiry
+  ---
+  duration_ms: 0.3932
+  type: 'test'
+  ...
+# Subtest: release risk matrix ranks high-risk evidence
+ok 42 - release risk matrix ranks high-risk evidence
+  ---
+  duration_ms: 0.5761
+  type: 'test'
+  ...
+# Subtest: what-if deployment simulation blocks policy blockers
+ok 43 - what-if deployment simulation blocks policy blockers
+  ---
+  duration_ms: 0.3025
+  type: 'test'
+  ...
+# Subtest: rollback readiness requires exported definitions
+ok 44 - rollback readiness requires exported definitions
+  ---
+  duration_ms: 0.3155
+  type: 'test'
+  ...
+# Subtest: ownership coverage flags orphaned items without role coverage
+ok 45 - ownership coverage flags orphaned items without role coverage
+  ---
+  duration_ms: 0.357
+  type: 'test'
+  ...
+# Subtest: data contract review fails missing required terms
+ok 46 - data contract review fails missing required terms
+  ---
+  duration_ms: 0.3457
+  type: 'test'
+  ...
+# Subtest: tenant posture weakens on paused capacity evidence
+ok 47 - tenant posture weakens on paused capacity evidence
+  ---
+  duration_ms: 0.3559
+  type: 'test'
+  ...
+# Subtest: operational slo misses with failed and blocked evidence
+ok 48 - operational slo misses with failed and blocked evidence
+  ---
+  duration_ms: 0.4245
+  type: 'test'
+  ...
+# Subtest: workspace criticality scores tier one for broad production warehouse evidence
+ok 49 - workspace criticality scores tier one for broad production warehouse evidence
+  ---
+  duration_ms: 0.5375
+  type: 'test'
+  ...
+# Subtest: change freeze window blocks matching environment
+ok 50 - change freeze window blocks matching environment
+  ---
+  duration_ms: 0.3809
+  type: 'test'
+  ...
+# Subtest: access recertification packet requires review for privileged assignments
+ok 51 - access recertification packet requires review for privileged assignments
+  ---
+  duration_ms: 0.379
+  type: 'test'
+  ...
+# Subtest: executive release brief summarizes decision and risks
+ok 52 - executive release brief summarizes decision and risks
+  ---
+  duration_ms: 0.4812
+  type: 'test'
+  ...
+# Subtest: operator action queue prioritizes blockers
+ok 53 - operator action queue prioritizes blockers
+  ---
+  duration_ms: 0.3852
+  type: 'test'
+  ...
+# Subtest: business impact estimates material impact from usage and criticality
+ok 54 - business impact estimates material impact from usage and criticality
+  ---
+  duration_ms: 0.3141
+  type: 'test'
+  ...
+# Subtest: dependency bottleneck detection finds high fan-out node
+ok 55 - dependency bottleneck detection finds high fan-out node
+  ---
+  duration_ms: 0.3719
+  type: 'test'
+  ...
+# Subtest: release calendar collision detects overlapping windows
+ok 56 - release calendar collision detects overlapping windows
+  ---
+  duration_ms: 0.2893
+  type: 'test'
+  ...
+# Subtest: recovery drill blocks when rollback and incident evidence are missing
+ok 57 - recovery drill blocks when rollback and incident evidence are missing
+  ---
+  duration_ms: 0.2985
+  type: 'test'
+  ...
+# Subtest: control maturity scores optimized when all controls are present
+ok 58 - control maturity scores optimized when all controls are present
+  ---
+  duration_ms: 0.6375
+  type: 'test'
+  ...
+# Subtest: workflow recipes cover specialized skills
+ok 59 - workflow recipes cover specialized skills
+  ---
+  duration_ms: 2.5141
+  type: 'test'
+  ...
+# Subtest: workflow prompt includes skill and ordered tools
+ok 60 - workflow prompt includes skill and ordered tools
+  ---
+  duration_ms: 0.4348
+  type: 'test'
+  ...
+# Subtest: governance board recipe includes advanced USP gate tools
+ok 61 - governance board recipe includes advanced USP gate tools
+  ---
+  duration_ms: 0.2162
+  type: 'test'
+  ...
+# Subtest: compliance evidence recipe includes audit and bundle tools
+ok 62 - compliance evidence recipe includes audit and bundle tools
+  ---
+  duration_ms: 0.1995
+  type: 'test'
+  ...
+# Subtest: resilience hardening recipe includes simulation and SLO tools
+ok 63 - resilience hardening recipe includes simulation and SLO tools
+  ---
+  duration_ms: 0.3763
+  type: 'test'
+  ...
+# Subtest: executive control recipe includes brief and action queue tools
+ok 64 - executive control recipe includes brief and action queue tools
+  ---
+  duration_ms: 0.1872
+  type: 'test'
+  ...
+# Subtest: value and maturity recipe includes impact and maturity tools
+ok 65 - value and maturity recipe includes impact and maturity tools
+  ---
+  duration_ms: 0.1676
+  type: 'test'
+  ...
+# Subtest: live smoke skips without required Fabric env vars
+ok 66 - live smoke skips without required Fabric env vars
+  ---
+  duration_ms: 820.6454
+  type: 'test'
+  ...
+1..66
+# tests 66
+# suites 0
+# pass 66
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2074.9738

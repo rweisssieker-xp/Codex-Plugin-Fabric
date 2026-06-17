@@ -9,8 +9,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "npm run build && node --test dist/**/*.test.js",
-    "smoke": "npm run build && node scripts/smoke-mcp.mjs"
+    "test": "npm run build && node --test dist/**/*.test.js scripts/*.test.mjs",
+    "smoke": "npm run build && node scripts/smoke-mcp.mjs",
+    "verify:endpoints": "node scripts/verify-endpoints.mjs",
+    "export:tool-metadata": "npm run build && node scripts/export-tool-metadata.mjs",
+    "evidence:package": "npm run build && node scripts/generate-evidence-package.mjs",
+    "smoke:fabric-live": "npm run build && node scripts/smoke-fabric-live.mjs",
+    "verify:marketplace": "npm test && npm run smoke && npm audit --omit=dev && node scripts/verify-marketplace.mjs",
+    "verify:all": "npm run verify:marketplace && npm run verify:endpoints && npm run smoke:fabric-live"
   },
   "dependencies": {
     "@azure/msal-node": "^5.2.2",

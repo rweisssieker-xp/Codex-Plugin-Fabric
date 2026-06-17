@@ -1,0 +1,124 @@
+export interface FabricEndpointMetadata {
+  tool: string;
+  group: string;
+  method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  path: string;
+  mutating: boolean;
+  requiresGuardrails?: boolean;
+  adminPreview?: boolean;
+  beta?: boolean;
+  lro?: boolean;
+}
+
+export const FABRIC_ENDPOINTS: FabricEndpointMetadata[] = [
+  { tool: "fabric_list_workspaces", group: "inventory", method: "GET", path: "/workspaces", mutating: false },
+  { tool: "fabric_get_workspace", group: "inventory", method: "GET", path: "/workspaces/{workspaceId}", mutating: false },
+  { tool: "fabric_list_items", group: "inventory", method: "GET", path: "/workspaces/{workspaceId}/items", mutating: false },
+  { tool: "fabric_get_item", group: "inventory", method: "GET", path: "/workspaces/{workspaceId}/items/{itemId}", mutating: false },
+  { tool: "fabric_get_item_definition", group: "definitions", method: "POST", path: "/workspaces/{workspaceId}/items/{itemId}/getDefinition", mutating: false, lro: true },
+  { tool: "fabric_generate_deployment_review", group: "definitions", method: "POST", path: "local://deployment-review", mutating: false },
+  { tool: "fabric_bulk_export_item_definitions", group: "definitions", method: "POST", path: "/workspaces/{workspaceId}/items/bulkExport", mutating: false, beta: true, lro: true },
+  { tool: "fabric_update_item_definition", group: "definitions", method: "POST", path: "/workspaces/{workspaceId}/items/{itemId}/updateDefinition", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_list_deployment_pipelines", group: "deployment", method: "GET", path: "/deploymentPipelines", mutating: false },
+  { tool: "fabric_get_deployment_pipeline", group: "deployment", method: "GET", path: "/deploymentPipelines/{pipelineId}", mutating: false },
+  { tool: "fabric_list_deployment_stages", group: "deployment", method: "GET", path: "/deploymentPipelines/{pipelineId}/stages", mutating: false },
+  { tool: "fabric_deployment_preflight", group: "deployment", method: "POST", path: "local://deployment-preflight", mutating: false },
+  { tool: "fabric_list_deployment_pipeline_operations", group: "deployment", method: "GET", path: "/deploymentPipelines/{pipelineId}/operations", mutating: false },
+  { tool: "fabric_get_deployment_pipeline_operation", group: "deployment", method: "GET", path: "/deploymentPipelines/{pipelineId}/operations/{operationId}", mutating: false },
+  { tool: "fabric_deploy_stage_content", group: "deployment", method: "POST", path: "/deploymentPipelines/{pipelineId}/stages/{stageId}/deploy", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_run_item_job", group: "jobs", method: "POST", path: "/workspaces/{workspaceId}/items/{itemId}/jobs/instances", mutating: true, requiresGuardrails: true },
+  { tool: "fabric_git_get_connection", group: "git", method: "GET", path: "/workspaces/{workspaceId}/git/connection", mutating: false },
+  { tool: "fabric_git_get_status", group: "git", method: "GET", path: "/workspaces/{workspaceId}/git/status", mutating: false, lro: true },
+  { tool: "fabric_git_get_my_credentials", group: "git", method: "GET", path: "/git/myGitCredentials", mutating: false },
+  { tool: "fabric_git_readiness", group: "git", method: "GET", path: "local://git-readiness", mutating: false },
+  { tool: "fabric_git_connect", group: "git", method: "POST", path: "/workspaces/{workspaceId}/git/connect", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_git_disconnect", group: "git", method: "POST", path: "/workspaces/{workspaceId}/git/disconnect", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_git_commit", group: "git", method: "POST", path: "/workspaces/{workspaceId}/git/commitToGit", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_git_update_from_git", group: "git", method: "POST", path: "/workspaces/{workspaceId}/git/updateFromGit", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_git_initialize_connection", group: "git", method: "POST", path: "/workspaces/{workspaceId}/git/initializeConnection", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_git_update_my_credentials", group: "git", method: "PATCH", path: "/git/myGitCredentials", mutating: true, requiresGuardrails: true, lro: true },
+  { tool: "fabric_admin_list_items", group: "admin", method: "GET", path: "/admin/items", mutating: false, adminPreview: true },
+  { tool: "fabric_admin_get_item", group: "admin", method: "GET", path: "/admin/items/{itemId}", mutating: false, adminPreview: true },
+  { tool: "fabric_admin_list_workspaces", group: "admin", method: "GET", path: "/admin/workspaces", mutating: false, adminPreview: true },
+  { tool: "fabric_admin_list_item_access_details", group: "admin", method: "GET", path: "/admin/items/{itemId}/users", mutating: false, adminPreview: true },
+  { tool: "fabric_admin_list_workspace_access_details", group: "admin", method: "GET", path: "/admin/workspaces/{workspaceId}/users", mutating: false, adminPreview: true },
+  { tool: "fabric_admin_list_user_access_entities", group: "admin", method: "GET", path: "/admin/users/{userId}/access", mutating: false, adminPreview: true },
+  { tool: "fabric_control_room_snapshot", group: "innovation", method: "GET", path: "local://control-room-snapshot", mutating: false },
+  { tool: "fabric_build_lineage_map", group: "innovation", method: "GET", path: "local://lineage-map", mutating: false },
+  { tool: "fabric_render_control_room_html", group: "innovation", method: "POST", path: "local://control-room-html", mutating: false },
+  { tool: "fabric_generate_change_cards", group: "innovation", method: "POST", path: "local://change-cards", mutating: false },
+  { tool: "fabric_create_approval_packet", group: "innovation", method: "POST", path: "local://approval-packet", mutating: false },
+  { tool: "fabric_analyze_permissions", group: "innovation", method: "GET", path: "local://permission-analysis", mutating: false },
+  { tool: "fabric_analyze_capacity_risk", group: "innovation", method: "GET", path: "local://capacity-risk", mutating: false },
+  { tool: "fabric_correlate_incident", group: "innovation", method: "GET", path: "local://incident-correlation", mutating: false },
+  { tool: "fabric_generate_recovery_plan", group: "innovation", method: "POST", path: "local://recovery-plan", mutating: false },
+  { tool: "fabric_export_as_code_package", group: "innovation", method: "POST", path: "local://fabric-as-code-package", mutating: false },
+  { tool: "fabric_validate_live_mutation_readiness", group: "innovation", method: "POST", path: "local://live-mutation-readiness", mutating: false },
+  { tool: "fabric_change_assurance_report", group: "change_assurance", method: "POST", path: "local://change-assurance-report", mutating: false },
+  { tool: "fabric_change_assurance_score", group: "change_assurance", method: "POST", path: "local://change-assurance-score", mutating: false },
+  { tool: "fabric_change_assurance_html", group: "change_assurance", method: "POST", path: "local://change-assurance-html", mutating: false },
+  { tool: "fabric_simulate_policy_on_workspace", group: "policy_simulation", method: "POST", path: "local://policy-simulation", mutating: false },
+  { tool: "fabric_suggest_policy_tightening", group: "policy_simulation", method: "POST", path: "local://policy-tightening", mutating: false },
+  { tool: "fabric_policy_diff", group: "policy_simulation", method: "POST", path: "local://policy-diff", mutating: false },
+  { tool: "fabric_fingerprint_workspace", group: "environment_drift", method: "POST", path: "local://workspace-fingerprint", mutating: false },
+  { tool: "fabric_compare_environment_fingerprints", group: "environment_drift", method: "POST", path: "local://environment-fingerprint-compare", mutating: false },
+  { tool: "fabric_drift_review_cards", group: "environment_drift", method: "POST", path: "local://drift-review-cards", mutating: false },
+  { tool: "fabric_build_incident_timeline", group: "incident_intelligence", method: "POST", path: "local://incident-timeline", mutating: false },
+  { tool: "fabric_rank_root_causes", group: "incident_intelligence", method: "POST", path: "local://root-cause-ranking", mutating: false },
+  { tool: "fabric_incident_brief", group: "incident_intelligence", method: "POST", path: "local://incident-brief", mutating: false },
+  { tool: "fabric_generate_deploy_playbook", group: "playbook", method: "POST", path: "local://deploy-playbook", mutating: false },
+  { tool: "fabric_validate_playbook_step", group: "playbook", method: "POST", path: "local://playbook-step-validation", mutating: false },
+  { tool: "fabric_finalize_mutation_evidence", group: "playbook", method: "POST", path: "local://mutation-evidence", mutating: false },
+  { tool: "fabric_build_approval_chain_evidence", group: "advanced_usps", method: "POST", path: "local://approval-chain-evidence", mutating: false },
+  { tool: "fabric_forecast_capacity_cost_risk", group: "advanced_usps", method: "POST", path: "local://capacity-cost-risk", mutating: false },
+  { tool: "fabric_map_workspace_blast_radius", group: "advanced_usps", method: "POST", path: "local://workspace-blast-radius-map", mutating: false },
+  { tool: "fabric_review_data_sensitivity", group: "advanced_usps", method: "POST", path: "local://data-sensitivity-review", mutating: false },
+  { tool: "fabric_release_readiness_gate", group: "advanced_usps", method: "POST", path: "local://release-readiness-gate", mutating: false },
+  { tool: "fabric_generate_compliance_evidence_bundle", group: "advanced_usps", method: "POST", path: "local://compliance-evidence-bundle", mutating: false },
+  { tool: "fabric_detect_audit_anomalies", group: "advanced_usps", method: "POST", path: "local://audit-anomaly-detection", mutating: false },
+  { tool: "fabric_suggest_least_privilege_roles", group: "advanced_usps", method: "POST", path: "local://least-privilege-roles", mutating: false },
+  { tool: "fabric_evaluate_policy_exception", group: "advanced_usps", method: "POST", path: "local://policy-exception-evaluation", mutating: false },
+  { tool: "fabric_build_release_risk_matrix", group: "advanced_usps", method: "POST", path: "local://release-risk-matrix", mutating: false },
+  { tool: "fabric_simulate_what_if_deployment", group: "advanced_usps", method: "POST", path: "local://what-if-deployment", mutating: false },
+  { tool: "fabric_assess_rollback_readiness", group: "advanced_usps", method: "POST", path: "local://rollback-readiness", mutating: false },
+  { tool: "fabric_analyze_ownership_coverage", group: "advanced_usps", method: "POST", path: "local://ownership-coverage", mutating: false },
+  { tool: "fabric_review_data_contracts", group: "advanced_usps", method: "POST", path: "local://data-contract-review", mutating: false },
+  { tool: "fabric_summarize_tenant_posture", group: "advanced_usps", method: "POST", path: "local://tenant-posture", mutating: false },
+  { tool: "fabric_evaluate_operational_slo", group: "advanced_usps", method: "POST", path: "local://operational-slo", mutating: false },
+  { tool: "fabric_score_workspace_criticality", group: "advanced_usps", method: "POST", path: "local://workspace-criticality", mutating: false },
+  { tool: "fabric_check_change_freeze_window", group: "advanced_usps", method: "POST", path: "local://change-freeze-window", mutating: false },
+  { tool: "fabric_build_access_recertification_packet", group: "advanced_usps", method: "POST", path: "local://access-recertification", mutating: false },
+  { tool: "fabric_generate_executive_release_brief", group: "advanced_usps", method: "POST", path: "local://executive-release-brief", mutating: false },
+  { tool: "fabric_build_operator_action_queue", group: "advanced_usps", method: "POST", path: "local://operator-action-queue", mutating: false },
+  { tool: "fabric_estimate_business_impact", group: "advanced_usps", method: "POST", path: "local://business-impact", mutating: false },
+  { tool: "fabric_identify_dependency_bottlenecks", group: "advanced_usps", method: "POST", path: "local://dependency-bottlenecks", mutating: false },
+  { tool: "fabric_detect_release_calendar_collisions", group: "advanced_usps", method: "POST", path: "local://release-calendar-collisions", mutating: false },
+  { tool: "fabric_generate_recovery_drill", group: "advanced_usps", method: "POST", path: "local://recovery-drill", mutating: false },
+  { tool: "fabric_score_control_maturity", group: "advanced_usps", method: "POST", path: "local://control-maturity", mutating: false },
+  { tool: "fabric_list_workflow_recipes", group: "workflows", method: "GET", path: "local://workflow-recipes", mutating: false },
+  { tool: "fabric_get_workflow_recipe", group: "workflows", method: "GET", path: "local://workflow-recipe", mutating: false },
+  { tool: "fabric_generate_workflow_prompt", group: "workflows", method: "POST", path: "local://workflow-prompt", mutating: false },
+  { tool: "fabric_get_learning_status", group: "learning", method: "GET", path: "local://learning-status", mutating: false },
+  { tool: "fabric_record_learning_event", group: "learning", method: "POST", path: "local://learning-event", mutating: false },
+  { tool: "fabric_record_task_memory", group: "learning", method: "POST", path: "local://task-memory", mutating: false },
+  { tool: "fabric_find_similar_task_memories", group: "learning", method: "GET", path: "local://similar-task-memories", mutating: false },
+  { tool: "fabric_recommend_next_task_steps", group: "learning", method: "POST", path: "local://next-task-steps", mutating: false },
+  { tool: "fabric_record_operator_feedback", group: "learning", method: "POST", path: "local://operator-feedback", mutating: false },
+  { tool: "fabric_list_learned_lessons", group: "learning", method: "GET", path: "local://learned-lessons", mutating: false },
+  { tool: "fabric_analyze_learning_patterns", group: "learning", method: "GET", path: "local://learning-patterns", mutating: false },
+  { tool: "fabric_generate_learned_playbook", group: "learning", method: "POST", path: "local://learned-playbook", mutating: false },
+  { tool: "fabric_suggest_policy_improvements", group: "learning", method: "POST", path: "local://learning-policy-suggestions", mutating: false },
+  { tool: "fabric_export_learning_evidence", group: "learning", method: "GET", path: "local://learning-evidence", mutating: false }
+];
+
+export function validateEndpointRegistry(): string[] {
+  const errors: string[] = [];
+  for (const endpoint of FABRIC_ENDPOINTS) {
+    if (endpoint.method === "DELETE") errors.push(`Delete endpoint is not allowed: ${endpoint.tool}`);
+    if (endpoint.mutating && endpoint.requiresGuardrails !== true) errors.push(`Mutating endpoint lacks guardrail metadata: ${endpoint.tool}`);
+    if ((endpoint.adminPreview || endpoint.beta) && endpoint.mutating && endpoint.requiresGuardrails !== true) {
+      errors.push(`Preview/beta mutating endpoint lacks guardrails: ${endpoint.tool}`);
+    }
+  }
+  return errors;
+}

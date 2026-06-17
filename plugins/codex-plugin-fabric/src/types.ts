@@ -84,7 +84,7 @@ export interface GraphEdge {
   from: string;
   to: string;
   relation: string;
-  confidence: "observed" | "inferred";
+  confidence: "observed";
   reason: string;
 }
 

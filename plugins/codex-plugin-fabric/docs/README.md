@@ -18,10 +18,15 @@ This documentation package is written for US-English marketplace submission, buy
 - [Tool Catalog](tool-catalog.md)
 - [Security and Governance](security-governance.md)
 - [Privacy and Security Notice](privacy-security-notice.md)
+- [Permissions Matrix](permissions-matrix.md)
+- [Live Smoke Test](live-smoke-test.md)
+- [Fabric-as-Code](fabric-as-code.md)
+- [Enterprise USPs](enterprise-usps.md)
+- [Bundled Skills](skills.md)
+- [Endpoint Validation](endpoint-validation.md)
 
 ## Release and Submission
 
 - [Roadmap](roadmap.md)
 - [Changelog](changelog.md)
 - [Marketplace Submission Checklist](submission-checklist.md)
-

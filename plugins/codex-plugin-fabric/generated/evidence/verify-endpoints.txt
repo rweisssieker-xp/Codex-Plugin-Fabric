@@ -1,0 +1,5 @@
+
+> codex-plugin-fabric@0.1.0 verify:endpoints
+> node scripts/verify-endpoints.mjs
+
+Endpoint verification passed: 87 endpoint metadata entries, 120 smoke tools.

@@ -10,6 +10,16 @@ import {
 const lakehouseId = "11111111-1111-1111-1111-111111111111";
 const notebookId = "22222222-2222-2222-2222-222222222222";
 
+test("dependency graph only creates nodes from item inventory", () => {
+  const graph = buildDependencyGraphFromItems([
+    { id: lakehouseId, displayName: "lh", type: "Lakehouse" },
+    { id: notebookId, displayName: "nb", type: "Notebook" }
+  ]);
+
+  assert.deepEqual(graph.edges, []);
+  assert.equal(graph.nodes.length, 2);
+});
+
 test("extractReferencedIds reads plain and base64 payload references", () => {
   const encoded = Buffer.from(`{"lakehouseId":"${lakehouseId}"}`, "utf8").toString("base64");
   const ids = extractReferencedIds({ parts: [{ payload: encoded }] });

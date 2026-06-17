@@ -29,6 +29,22 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
   );
 
   server.tool(
+    "fabric_list_deployment_pipeline_operations",
+    "List operations for a Fabric deployment pipeline.",
+    { deploymentPipelineId: UuidSchema },
+    ({ deploymentPipelineId }) =>
+      safeTool(async () => (await context.client.request(`/deploymentPipelines/${deploymentPipelineId}/operations`)).data)
+  );
+
+  server.tool(
+    "fabric_get_deployment_pipeline_operation",
+    "Get one deployment pipeline operation with execution plan details.",
+    { deploymentPipelineId: UuidSchema, operationId: z.string().min(1) },
+    ({ deploymentPipelineId, operationId }) =>
+      safeTool(async () => (await context.client.request(`/deploymentPipelines/${deploymentPipelineId}/operations/${operationId}`)).data)
+  );
+
+  server.tool(
     "fabric_list_deployment_stages",
     "List stages for a Fabric deployment pipeline.",
     { deploymentPipelineId: UuidSchema },
@@ -60,9 +76,10 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
       expectedPipelineId: UuidSchema.optional(),
       expectedWorkspaceId: UuidSchema.optional(),
       itemIds: z.array(UuidSchema).optional(),
-      allowProduction: z.boolean().optional()
+      allowProduction: z.boolean().optional(),
+      includeGitStatus: z.boolean().optional().default(false)
     },
-    ({ deploymentPipelineId, stageId, environmentLabel, expectedPipelineId, expectedWorkspaceId, itemIds, allowProduction }) =>
+    ({ deploymentPipelineId, stageId, environmentLabel, expectedPipelineId, expectedWorkspaceId, itemIds, allowProduction, includeGitStatus }) =>
       safeTool(async () => {
         const [stageResponse, itemsResponse] = await Promise.all([
           context.client.request(`/deploymentPipelines/${deploymentPipelineId}/stages/${stageId}`),
@@ -70,6 +87,11 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
         ]);
         const stage = stageResponse.data as Record<string, unknown>;
         const stageWorkspaceId = typeof stage.workspaceId === "string" ? stage.workspaceId : undefined;
+        const gitStatusResponse =
+          includeGitStatus && stageWorkspaceId
+            ? await context.client.request(`/workspaces/${stageWorkspaceId}/git/status`)
+            : undefined;
+        const gitStatusClean = inferCleanGitStatus(gitStatusResponse?.data);
         const guard = validateMutationGuard({
           confirm: true,
           environmentLabel,
@@ -94,7 +116,8 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
           allowProduction,
           preflightPassed: true,
           itemCount: selectedItemCount,
-          itemTypes: selectedTypes
+          itemTypes: selectedTypes,
+          gitStatusClean
         });
         const risk = classifyRisk({
           action: "deploy",
@@ -116,6 +139,7 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
             blockers: policyEvaluation.blockers,
             maxDeploymentItems: policy.maxDeploymentItems
           },
+          gitStatus: gitStatusResponse?.data,
           risk,
           blockers: [...new Set([...guard.blockers, ...policyEvaluation.blockers, ...risk.blockers])]
         };
@@ -198,6 +222,14 @@ export function registerDeploymentTools(server: McpServer, context: ToolContext)
     { operationId: z.string().min(1) },
     ({ operationId }) => safeTool(async () => (await context.client.request(`/operations/${operationId}/result`)).data)
   );
+}
+
+function inferCleanGitStatus(data: unknown): boolean | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const text = JSON.stringify(data).toLowerCase();
+  if (text.includes("conflict") || text.includes("uncommitted") || text.includes("behind") || text.includes("ahead")) return false;
+  if (text.includes("up to date") || text.includes("uptodate") || text.includes("clean")) return true;
+  return undefined;
 }
 
 function extractItemTypes(items: unknown[], selectedItemIds?: string[]): string[] {

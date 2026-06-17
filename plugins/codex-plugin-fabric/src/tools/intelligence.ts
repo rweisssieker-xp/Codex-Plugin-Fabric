@@ -4,13 +4,183 @@ import {
   analyzeBlastRadius,
   buildDependencyGraphFromItems,
   decodeDefinitionPayloads,
-  enrichGraphFromDefinitions
+  enrichGraphFromDefinitions,
+  enrichGraphFromKnownReferences,
+  extractReferencedIds
 } from "../graph.js";
+import { compareDefinitions } from "../diff.js";
+import { validateMutationGuard } from "../guards.js";
+import { evaluatePolicy } from "../policy.js";
 import { classifyRisk } from "../risk.js";
 import { ToolContext } from "./context.js";
 import { safeTool, UuidSchema, valuesArray } from "./toolUtils.js";
 
 export function registerIntelligenceTools(server: McpServer, context: ToolContext): void {
+  server.tool(
+    "fabric_bulk_export_item_definitions",
+    "Bulk export Fabric item definitions from a workspace using the beta API. Read-only and gated by allowBeta.",
+    {
+      workspaceId: UuidSchema,
+      itemIds: z.array(UuidSchema).optional(),
+      allowBeta: z.boolean().optional(),
+      timeoutMs: z.number().int().positive().max(900000).optional().default(300000)
+    },
+    ({ workspaceId, itemIds, allowBeta, timeoutMs }) =>
+      safeTool(async () => {
+        const policy = await context.policy.load();
+        const blockers: string[] = [];
+        if (allowBeta !== true) blockers.push("Bulk export beta API requires allowBeta: true.");
+        const policyEvaluation = evaluatePolicy(policy, {
+          action: "bulkExportDefinitions",
+          expectedWorkspaceId: workspaceId,
+          actualWorkspaceId: workspaceId,
+          isBetaApi: true,
+          itemCount: itemIds?.length ?? 0
+        });
+        blockers.push(...policyEvaluation.blockers);
+        if ((itemIds?.length ?? 0) > policy.maxBulkExportItems) {
+          blockers.push(`Bulk export item count exceeds policy maxBulkExportItems ${policy.maxBulkExportItems}.`);
+        }
+        if (blockers.length > 0) return { blocked: true, blockers: [...new Set(blockers)] };
+        const response = await context.client.request(`/workspaces/${workspaceId}/items/bulkExport`, {
+          method: "POST",
+          query: { beta: true },
+          body: itemIds ? { items: itemIds.map((itemId) => ({ itemId })) } : {}
+        });
+        const resolved = await context.client.resolveOperationIfPresent(response, timeoutMs);
+        return { operationId: response.operationId, result: resolved.data };
+      })
+  );
+
+  server.tool(
+    "fabric_package_workspace_definitions",
+    "Create a read-only package summary for workspace definitions using individual getDefinition calls.",
+    {
+      workspaceId: UuidSchema,
+      itemIds: z.array(UuidSchema).optional(),
+      maxItems: z.number().int().positive().max(100).optional().default(25)
+    },
+    ({ workspaceId, itemIds, maxItems }) =>
+      safeTool(async () => {
+        const itemsResponse = await context.client.request(`/workspaces/${workspaceId}/items`);
+        const items = valuesArray(itemsResponse.data);
+        const selected = itemIds
+          ? items.filter((item) => typeof item === "object" && item !== null && itemIds.includes(String((item as Record<string, unknown>).id)))
+          : items.slice(0, maxItems);
+        const definitions = await fetchDefinitions(context, workspaceId, selected);
+        return {
+          workspaceId,
+          itemCount: selected.length,
+          exportedDefinitionCount: definitions.length,
+          items: selected,
+          definitions
+        };
+      })
+  );
+
+  server.tool(
+    "fabric_generate_pull_request_summary",
+    "Generate a PR-ready markdown summary from real definition diff, deployment review, blast radius, and risk context.",
+    {
+      title: z.string().min(1),
+      definitionDiff: z.record(z.unknown()).optional(),
+      deploymentReview: z.record(z.unknown()).optional(),
+      blastRadius: z.record(z.unknown()).optional(),
+      risk: z.record(z.unknown()).optional()
+    },
+    ({ title, definitionDiff, deploymentReview, blastRadius, risk }) =>
+      safeTool(async () => {
+        if (!definitionDiff && !deploymentReview && !blastRadius && !risk) {
+          return {
+            blocked: true,
+            blockers: ["At least one real review input is required: definitionDiff, deploymentReview, blastRadius, or risk."]
+          };
+        }
+        return {
+          markdown: [
+          `# ${title}`,
+          "## Summary",
+          summarizeReview(definitionDiff, deploymentReview, blastRadius, risk),
+          "## Definition Changes",
+          fenced(definitionDiff ?? {}),
+          "## Deployment Review",
+          fenced(deploymentReview ?? {}),
+          "## Blast Radius",
+          fenced(blastRadius ?? {}),
+          "## Risk",
+          fenced(risk ?? {}),
+          "## Checklist",
+          "- [ ] Confirm target workspace and item IDs",
+          "- [ ] Review policy blockers and warnings",
+          "- [ ] Confirm Git status is acceptable",
+          "- [ ] Run guarded deployment/apply only after approval"
+          ].join("\n\n")
+        };
+      })
+  );
+
+  server.tool(
+    "fabric_update_item_definition",
+    "Update one Fabric item definition with strict guardrails. Disabled by policy by default.",
+    {
+      workspaceId: UuidSchema,
+      itemId: UuidSchema,
+      expectedWorkspaceId: UuidSchema,
+      expectedItemId: UuidSchema,
+      itemType: z.string().optional(),
+      definition: z.record(z.unknown()),
+      confirm: z.boolean().optional(),
+      environmentLabel: z.string().optional(),
+      allowProduction: z.boolean().optional(),
+      preflightPassed: z.boolean().optional(),
+      definitionDiffApproved: z.boolean().optional(),
+      timeoutMs: z.number().int().positive().max(900000).optional().default(300000)
+    },
+    (input) =>
+      safeTool(async () => {
+        const policy = await context.policy.load();
+        const guard = validateMutationGuard({
+          ...input,
+          actualWorkspaceId: input.workspaceId
+        });
+        const policyEvaluation = evaluatePolicy(policy, {
+          ...input,
+          action: "updateItemDefinition",
+          actualWorkspaceId: input.workspaceId,
+          actualItemId: input.itemId,
+          isDefinitionApply: true,
+          itemTypes: input.itemType ? [input.itemType] : []
+        });
+        const blockers = [...new Set([...guard.blockers, ...policyEvaluation.blockers])];
+        if (policy.allowedApplyItemTypes.length > 0 && input.itemType && !policy.allowedApplyItemTypes.includes(input.itemType)) {
+          blockers.push("Item type is not allowed by policy.allowedApplyItemTypes.");
+        }
+        if (blockers.length > 0) return { blocked: true, blockers };
+        await context.audit.append({
+          timestamp: new Date().toISOString(),
+          tool: "fabric_update_item_definition",
+          target: { workspaceId: input.workspaceId, itemId: input.itemId },
+          status: "started",
+          input
+        });
+        const response = await context.client.request(`/workspaces/${input.workspaceId}/items/${input.itemId}/updateDefinition`, {
+          method: "POST",
+          body: input.definition
+        });
+        const resolved = await context.client.resolveOperationIfPresent(response, input.timeoutMs);
+        await context.audit.append({
+          timestamp: new Date().toISOString(),
+          tool: "fabric_update_item_definition",
+          target: { workspaceId: input.workspaceId, itemId: input.itemId },
+          status: "succeeded",
+          requestId: resolved.requestId ?? response.requestId,
+          operationId: response.operationId,
+          input
+        });
+        return { operationId: response.operationId, result: resolved.data };
+      })
+  );
+
   server.tool(
     "fabric_get_item_definition",
     "Get a Fabric item definition and optionally decode base64 definition parts.",
@@ -37,21 +207,93 @@ export function registerIntelligenceTools(server: McpServer, context: ToolContex
   );
 
   server.tool(
+    "fabric_compare_item_definitions",
+    "Compare two Fabric item definitions and summarize changed parts and references.",
+    {
+      left: z.record(z.unknown()),
+      right: z.record(z.unknown())
+    },
+    ({ left, right }) =>
+      safeTool(async () => {
+        const diff = compareDefinitions(left, right);
+        const policy = await context.policy.load();
+        const blocked = diff.totalBytes > policy.maxDefinitionDiffBytes;
+        return {
+          blocked,
+          blockers: blocked ? [`Definition diff exceeds policy maxDefinitionDiffBytes ${policy.maxDefinitionDiffBytes}.`] : [],
+          diff
+        };
+      })
+  );
+
+  server.tool(
+    "fabric_generate_deployment_review",
+    "Generate a deployment review from real preflight, definition diff, graph, and policy context.",
+    {
+      workspaceId: UuidSchema.optional(),
+      preflight: z.record(z.unknown()).optional(),
+      definitionDiff: z.record(z.unknown()).optional(),
+      graph: z.record(z.unknown()).optional(),
+      environmentLabel: z.string().optional()
+    },
+    (input) =>
+      safeTool(async () => {
+        if (!input.preflight && !input.definitionDiff && !input.graph) {
+          return {
+            blocked: true,
+            blockers: ["Deployment review requires at least one real input: preflight, definitionDiff, or graph."]
+          };
+        }
+        const policy = await context.policy.load();
+        const diff = input.definitionDiff as Record<string, unknown> | undefined;
+        const graph = input.graph as Record<string, unknown> | undefined;
+        const graphEdges = Array.isArray(graph?.edges) ? graph.edges : undefined;
+        const observedEdgeCount = graphEdges?.filter((edge) => {
+          return typeof edge === "object" && edge !== null && (edge as Record<string, unknown>).confidence === "observed";
+        }).length;
+        const changedParts = Array.isArray(diff?.changedParts) ? diff.changedParts.length : undefined;
+        const addedReferences = Array.isArray(diff?.addedReferences) ? diff.addedReferences.length : undefined;
+        return {
+          title: "Fabric Deployment Review",
+          environmentLabel: input.environmentLabel,
+          policy: {
+            requireCleanGitBeforeDeployment: policy.requireCleanGitBeforeDeployment,
+            maxDefinitionDiffBytes: policy.maxDefinitionDiffBytes
+          },
+          summary: {
+            changedParts,
+            addedReferences,
+            observedGraphEdges: observedEdgeCount,
+            preflightPassed: (input.preflight as Record<string, unknown> | undefined)?.passed
+          },
+          releaseNotes: [
+            changedParts !== undefined ? `${changedParts} definition part(s) changed.` : "No definition diff was provided.",
+            addedReferences !== undefined ? `${addedReferences} new reference(s) detected.` : "Reference changes were not provided.",
+            observedEdgeCount !== undefined ? `${observedEdgeCount} observed graph relationship(s) included.` : "No graph evidence was provided."
+          ],
+          recommendation: "Review blockers, confirm target IDs, check Git status, and execute guarded deployment only after approval."
+        };
+      })
+  );
+
+  server.tool(
     "fabric_build_dependency_graph",
-    "Build a Fabric dependency graph from workspace items and optional item definitions.",
+    "Build a Fabric dependency graph from workspace items and real item definitions.",
     {
       workspaceId: UuidSchema,
-      includeDefinitions: z.boolean().optional().default(false),
+      includeDefinitions: z.boolean().optional().default(true),
       maxDefinitions: z.number().int().positive().max(100).optional().default(25)
     },
     ({ workspaceId, includeDefinitions, maxDefinitions }) =>
       safeTool(async () => {
         const response = await context.client.request(`/workspaces/${workspaceId}/items`);
         const items = valuesArray(response.data);
-        const graph = buildDependencyGraphFromItems(items, workspaceId);
-        if (!includeDefinitions) return graph;
+        let graph = buildDependencyGraphFromItems(items, workspaceId);
+        if (!includeDefinitions) return { ...graph, evidence: { definitionsRead: 0 } };
         const definitions = await fetchDefinitions(context, workspaceId, items.slice(0, maxDefinitions));
-        return enrichGraphFromDefinitions(graph, definitions);
+        graph = enrichGraphFromDefinitions(graph, definitions);
+        const enriched = enrichGraphFromKnownReferences(graph, referencesFromDefinitions(definitions));
+        return { ...enriched, evidence: { definitionsRead: definitions.length } };
       })
   );
 
@@ -61,7 +303,7 @@ export function registerIntelligenceTools(server: McpServer, context: ToolContex
     {
       workspaceId: UuidSchema,
       changedItemIds: z.array(UuidSchema).min(1),
-      includeDefinitions: z.boolean().optional().default(false),
+      includeDefinitions: z.boolean().optional().default(true),
       maxDefinitions: z.number().int().positive().max(100).optional().default(25)
     },
     ({ workspaceId, changedItemIds, includeDefinitions, maxDefinitions }) =>
@@ -69,11 +311,17 @@ export function registerIntelligenceTools(server: McpServer, context: ToolContex
         const response = await context.client.request(`/workspaces/${workspaceId}/items`);
         const items = valuesArray(response.data);
         let graph = buildDependencyGraphFromItems(items, workspaceId);
+        let definitionsRead = 0;
         if (includeDefinitions) {
           const definitions = await fetchDefinitions(context, workspaceId, items.slice(0, maxDefinitions));
+          definitionsRead = definitions.length;
           graph = enrichGraphFromDefinitions(graph, definitions);
+          graph = enrichGraphFromKnownReferences(graph, referencesFromDefinitions(definitions));
         }
-        return analyzeBlastRadius(graph, changedItemIds);
+        return {
+          ...analyzeBlastRadius(graph, changedItemIds),
+          evidence: { definitionsRead }
+        };
       })
   );
 
@@ -101,6 +349,9 @@ export function registerIntelligenceTools(server: McpServer, context: ToolContex
     },
     ({ title, context: runbookContext, includeRollbackSection }) =>
       safeTool(async () => {
+        if (Object.keys(runbookContext).length === 0) {
+          return { blocked: true, blockers: ["Runbook generation requires real action, preflight, diagnostic, or operation context."] };
+        }
         const sections = [
           `# ${title}`,
           "## Context",
@@ -127,6 +378,30 @@ export function registerIntelligenceTools(server: McpServer, context: ToolContex
   );
 }
 
+function fenced(value: unknown): string {
+  return `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
+}
+
+function summarizeReview(definitionDiff?: Record<string, unknown>, deploymentReview?: Record<string, unknown>, blastRadius?: Record<string, unknown>, risk?: Record<string, unknown>): string {
+  const parts = [];
+  if (definitionDiff) parts.push("Definition changes are included.");
+  if (deploymentReview) parts.push("Deployment review is included.");
+  if (blastRadius) parts.push("Blast-radius context is included.");
+  if (risk) parts.push("Risk context is included.");
+  return parts.length > 0 ? parts.join(" ") : "No structured review inputs were provided.";
+}
+
+function referencesFromDefinitions(definitions: Array<{ itemId: string; definition: unknown }>) {
+  return definitions.flatMap((entry) =>
+    extractReferencedIds(entry.definition).map((sourceId) => ({
+      sourceId,
+      targetId: entry.itemId,
+      relation: "definition-reference",
+      reason: "The target item definition references this source ID."
+    }))
+  );
+}
+
 async function fetchDefinitions(context: ToolContext, workspaceId: string, items: unknown[]) {
   const definitions: Array<{ itemId: string; definition: unknown }> = [];
   for (const item of items) {
@@ -139,8 +414,8 @@ async function fetchDefinitions(context: ToolContext, workspaceId: string, items
       const operationId = response.operationId ?? readOperationId(response.data);
       const resolved = operationId ? await context.client.pollOperation(operationId, 300000) : response;
       definitions.push({ itemId, definition: decodeDefinitionPayloads(resolved.data) });
-    } catch {
-      // Not all item types support definitions. Graph construction stays best-effort.
+    } catch (error) {
+      throw new Error(`Failed to read definition for item ${itemId}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   return definitions;

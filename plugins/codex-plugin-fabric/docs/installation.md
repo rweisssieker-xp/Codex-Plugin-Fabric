@@ -70,6 +70,8 @@ npm run build
 
 ```bash
 npm test
+npm run smoke
+npm run verify:marketplace
 ```
 
 ## Marketplace Install

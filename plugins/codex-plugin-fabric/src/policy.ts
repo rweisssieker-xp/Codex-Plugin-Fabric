@@ -10,7 +10,27 @@ export interface FabricPolicy {
   requireExpectedTargetForMutation: boolean;
   allowedWorkspaceIds: string[];
   allowedPipelineIds: string[];
+  allowedConnectionIds: string[];
+  allowedGatewayIds: string[];
   blockedItemTypes: string[];
+  allowGitMutations: boolean;
+  allowAdminPreview: boolean;
+  allowedGitProviders: string[];
+  requireCleanGitBeforeDeployment: boolean;
+  maxDefinitionDiffBytes: number;
+  allowBetaApis: boolean;
+  allowDefinitionApply: boolean;
+  maxBulkExportItems: number;
+  allowedApplyItemTypes: string[];
+  requireDefinitionDiffApproval: boolean;
+  allowLocalLearning: boolean;
+  maxLearningPayloadBytes: number;
+  learningRetentionDays: number;
+  allowLearningEvidenceExport: boolean;
+  minLessonConfidenceForPolicySuggestions: number;
+  allowTaskMemory: boolean;
+  allowAutomaticTaskSummaryMemory: boolean;
+  maxTaskMemoryPayloadBytes: number;
   environmentAliases: Record<string, string[]>;
 }
 
@@ -19,6 +39,17 @@ export interface PolicyEvaluationInput extends GuardedMutationInput {
   itemCount?: number;
   itemTypes?: string[];
   payloadBytes?: number;
+  gitProvider?: string;
+  connectionIds?: string[];
+  gatewayIds?: string[];
+  definitionDiffBytes?: number;
+  isAdminPreview?: boolean;
+  gitStatusClean?: boolean;
+  isBetaApi?: boolean;
+  isDefinitionApply?: boolean;
+  expectedItemId?: string;
+  actualItemId?: string;
+  definitionDiffApproved?: boolean;
 }
 
 export interface PolicyEvaluation {
@@ -37,7 +68,27 @@ export const DEFAULT_POLICY: FabricPolicy = {
   requireExpectedTargetForMutation: true,
   allowedWorkspaceIds: [],
   allowedPipelineIds: [],
+  allowedConnectionIds: [],
+  allowedGatewayIds: [],
   blockedItemTypes: [],
+  allowGitMutations: false,
+  allowAdminPreview: false,
+  allowedGitProviders: [],
+  requireCleanGitBeforeDeployment: false,
+  maxDefinitionDiffBytes: 1048576,
+  allowBetaApis: false,
+  allowDefinitionApply: false,
+  maxBulkExportItems: 25,
+  allowedApplyItemTypes: [],
+  requireDefinitionDiffApproval: true,
+  allowLocalLearning: true,
+  maxLearningPayloadBytes: 65536,
+  learningRetentionDays: 0,
+  allowLearningEvidenceExport: true,
+  minLessonConfidenceForPolicySuggestions: 0.5,
+  allowTaskMemory: true,
+  allowAutomaticTaskSummaryMemory: true,
+  maxTaskMemoryPayloadBytes: 65536,
   environmentAliases: {
     dev: ["development", "sandbox"],
     test: ["qa", "uat"],
@@ -86,6 +137,45 @@ export function evaluatePolicy(policy: FabricPolicy, input: PolicyEvaluationInpu
   if ((input.payloadBytes ?? 0) > policy.maxJobPayloadBytes) {
     blockers.push(`Job payload exceeds policy maxJobPayloadBytes ${policy.maxJobPayloadBytes}.`);
   }
+  if ((input.definitionDiffBytes ?? 0) > policy.maxDefinitionDiffBytes) {
+    blockers.push(`Definition diff exceeds policy maxDefinitionDiffBytes ${policy.maxDefinitionDiffBytes}.`);
+  }
+  if (/^git/i.test(input.action) && !policy.allowGitMutations) {
+    blockers.push("Policy blocks Git mutations. Set allowGitMutations true to enable guarded Git write actions.");
+  }
+  if (input.gitProvider && policy.allowedGitProviders.length > 0 && !policy.allowedGitProviders.includes(input.gitProvider)) {
+    blockers.push("Git provider is not in policy.allowedGitProviders.");
+  }
+  if (input.isAdminPreview && !policy.allowAdminPreview) {
+    blockers.push("Admin preview APIs require policy.allowAdminPreview true.");
+  }
+  if (input.isBetaApi && !policy.allowBetaApis) {
+    blockers.push("Beta Fabric APIs require policy.allowBetaApis true.");
+  }
+  if (input.isDefinitionApply && !policy.allowDefinitionApply) {
+    blockers.push("Definition apply requires policy.allowDefinitionApply true.");
+  }
+  if (input.expectedItemId && input.actualItemId && input.expectedItemId !== input.actualItemId) {
+    blockers.push("expectedItemId does not match the target item.");
+  }
+  if (input.isDefinitionApply && policy.requireDefinitionDiffApproval && input.definitionDiffApproved !== true) {
+    blockers.push("Definition apply requires definitionDiffApproved true.");
+  }
+  if (policy.requireCleanGitBeforeDeployment && input.action === "deploy" && input.gitStatusClean === false) {
+    blockers.push("Policy requires clean Git status before deployment.");
+  }
+  const disallowedConnections = (input.connectionIds ?? []).filter(
+    (id) => policy.allowedConnectionIds.length > 0 && !policy.allowedConnectionIds.includes(id)
+  );
+  if (disallowedConnections.length > 0) {
+    blockers.push(`Connection ID(s) not allowed by policy: ${disallowedConnections.join(", ")}.`);
+  }
+  const disallowedGateways = (input.gatewayIds ?? []).filter(
+    (id) => policy.allowedGatewayIds.length > 0 && !policy.allowedGatewayIds.includes(id)
+  );
+  if (disallowedGateways.length > 0) {
+    blockers.push(`Gateway ID(s) not allowed by policy: ${disallowedGateways.join(", ")}.`);
+  }
   const blockedTypes = (input.itemTypes ?? []).filter((type) => policy.blockedItemTypes.includes(type));
   if (blockedTypes.length > 0) {
     blockers.push(`Action includes blocked item type(s): ${[...new Set(blockedTypes)].join(", ")}.`);
@@ -117,7 +207,11 @@ function normalizePolicy(input: Partial<FabricPolicy>): FabricPolicy {
     productionLabels: input.productionLabels ?? DEFAULT_POLICY.productionLabels,
     allowedWorkspaceIds: input.allowedWorkspaceIds ?? DEFAULT_POLICY.allowedWorkspaceIds,
     allowedPipelineIds: input.allowedPipelineIds ?? DEFAULT_POLICY.allowedPipelineIds,
+    allowedConnectionIds: input.allowedConnectionIds ?? DEFAULT_POLICY.allowedConnectionIds,
+    allowedGatewayIds: input.allowedGatewayIds ?? DEFAULT_POLICY.allowedGatewayIds,
     blockedItemTypes: input.blockedItemTypes ?? DEFAULT_POLICY.blockedItemTypes,
+    allowedGitProviders: input.allowedGitProviders ?? DEFAULT_POLICY.allowedGitProviders,
+    allowedApplyItemTypes: input.allowedApplyItemTypes ?? DEFAULT_POLICY.allowedApplyItemTypes,
     environmentAliases: {
       ...DEFAULT_POLICY.environmentAliases,
       ...(input.environmentAliases ?? {})

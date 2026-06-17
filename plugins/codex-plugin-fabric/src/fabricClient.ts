@@ -57,6 +57,34 @@ export class FabricClient {
     };
   }
 
+  async requestAll<T = unknown>(path: string, options: FabricRequestOptions = {}): Promise<T[]> {
+    const values: T[] = [];
+    let continuationToken = options.query?.continuationToken;
+
+    do {
+      const response = await this.request(path, {
+        ...options,
+        query: { ...options.query, continuationToken }
+      });
+      const data = response.data as Record<string, unknown>;
+      const pageValues = Array.isArray(data.value) ? data.value : Array.isArray(data.items) ? data.items : [];
+      values.push(...(pageValues as T[]));
+      continuationToken =
+        typeof data.continuationToken === "string"
+          ? data.continuationToken
+          : typeof data.continuationUri === "string"
+            ? new URL(data.continuationUri).searchParams.get("continuationToken") ?? undefined
+            : undefined;
+    } while (continuationToken);
+
+    return values;
+  }
+
+  async resolveOperationIfPresent(response: FabricResponse, timeoutMs = 300000): Promise<FabricResponse> {
+    const operationId = response.operationId ?? readOperationId(response.data);
+    return operationId ? this.pollOperation(operationId, timeoutMs) : response;
+  }
+
   async pollOperation(operationId: string, timeoutMs = 300000, intervalMs = 5000): Promise<FabricResponse> {
     const started = Date.now();
     let last: FabricResponse | undefined;
@@ -131,6 +159,12 @@ function operationStatus(data: unknown): string | undefined {
   if (!data || typeof data !== "object") return undefined;
   const record = data as Record<string, unknown>;
   return typeof record.status === "string" ? record.status : undefined;
+}
+
+function readOperationId(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const record = data as Record<string, unknown>;
+  return typeof record.operationId === "string" ? record.operationId : undefined;
 }
 
 function sleep(ms: number): Promise<void> {
