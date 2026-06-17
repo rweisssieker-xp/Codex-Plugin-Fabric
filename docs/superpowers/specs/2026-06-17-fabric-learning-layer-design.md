@@ -2,14 +2,15 @@
 
 ## Summary
 
-The Fabric plugin should learn from local operations without becoming an uncontrolled autonomous actor. The first learning release adds a local SQLite-backed learning layer that captures redacted operational events, explicit operator feedback, learned lessons, reusable playbooks, and risk observations. It improves future diagnostics, preflight summaries, policy recommendations, and runbook generation while preserving the plugin's existing safety model.
+The Fabric plugin should learn from local tasks and operations without becoming an uncontrolled autonomous actor. The first learning release adds a local SQLite-backed learning layer that captures structured task memories, redacted operational events, explicit operator feedback, learned lessons, reusable playbooks, and risk observations. It improves future diagnostics, preflight summaries, policy recommendations, task planning, tool sequencing, and runbook generation while preserving the plugin's existing safety model.
 
 The learning layer is local-first, non-secret, auditable, and advisory. It never changes Microsoft Fabric, local policy, or source code by itself.
 
 ## Goals
 
 - Let the plugin remember useful operational knowledge across Codex sessions.
-- Turn audit history and user feedback into ranked lessons and playbook suggestions.
+- Turn task outcomes, audit history, and user feedback into ranked lessons and playbook suggestions.
+- Learn which task plans, tool sequences, assumptions, and decisions worked or failed in specific Fabric environments.
 - Improve risk and policy recommendations with observed evidence.
 - Keep all learning local and redacted by default.
 - Make learned knowledge exportable for evidence packages and marketplace review.
@@ -21,6 +22,7 @@ The learning layer is local-first, non-secret, auditable, and advisory. It never
 - No self-modifying plugin code.
 - No cloud training, telemetry upload, or central service.
 - No credential, token, or secret persistence.
+- No full chat transcript capture.
 - No destructive repair or rollback automation.
 
 ## Architecture
@@ -30,13 +32,14 @@ The learning layer has four bounded parts:
 1. `learningStore`
    - Owns the SQLite database.
    - Creates and migrates schema on startup or first use.
-   - Stores events, feedback, lessons, playbooks, and risk observations.
+   - Stores task memories, events, feedback, lessons, playbooks, and risk observations.
    - Depends only on local config paths and a SQLite library.
 
 2. `learning`
    - Contains deterministic learning logic.
-   - Converts audit entries, feedback, diagnostics, and tool outputs into lessons.
+   - Converts task memories, audit entries, feedback, diagnostics, and tool outputs into lessons.
    - Scores confidence using frequency, recency, accepted feedback, and severity.
+   - Recommends future task approaches using similar goal, environment, artifact, policy, and outcome patterns.
    - Produces recommendations without side effects.
 
 3. `tools/learning`
@@ -56,6 +59,9 @@ Tables:
 - `learning_events`
   - `id`, `timestamp`, `source`, `toolName`, `workspaceId`, `itemId`, `pipelineId`, `environmentLabel`, `category`, `severity`, `summary`, `payloadJson`, `hash`
 
+- `task_memories`
+  - `id`, `createdAt`, `updatedAt`, `taskGoal`, `taskType`, `environmentLabel`, `workspaceId`, `itemId`, `pipelineId`, `planSummary`, `toolsUsedJson`, `assumptionsJson`, `decisionsJson`, `outcome`, `lesson`, `doNextTime`, `avoidNextTime`, `confidence`, `evidenceRefsJson`, `payloadJson`, `hash`
+
 - `operator_feedback`
   - `id`, `timestamp`, `targetType`, `targetId`, `rating`, `comment`, `accepted`, `payloadJson`
 
@@ -70,6 +76,8 @@ Tables:
 
 All JSON payloads are redacted before storage. Inputs are size-limited to avoid turning the database into an unbounded data dump.
 
+Task memories are structured summaries, not raw conversations. A task memory captures what the operator was trying to achieve, what plan and tool sequence was used, what decisions were accepted, what failed or worked, and what should be repeated or avoided next time. The plugin can create task memories from explicit tool calls, generated playbooks, final task summaries, or direct operator instructions such as "remember this for production deployments."
+
 ## MCP Tools
 
 Initial tools:
@@ -81,6 +89,16 @@ Initial tools:
   - Records a redacted local event from diagnostics, preflight, deployment review, or operator context.
   - Read/write local only. No Fabric mutation.
 
+- `fabric_record_task_memory`
+  - Records a structured task memory with goal, plan summary, tools used, assumptions, decisions, outcome, lesson, and next-time guidance.
+  - Used when a task completes, when a user says "remember this", or when a workflow recipe produces a reusable operating pattern.
+
+- `fabric_find_similar_task_memories`
+  - Finds prior tasks similar to a new Fabric goal by task type, environment, workspace, item, pipeline, outcome, and key terms.
+
+- `fabric_recommend_next_task_steps`
+  - Uses similar task memories, lessons, policy signals, and known risks to recommend the next safe tool sequence for a new task.
+
 - `fabric_record_operator_feedback`
   - Records explicit user feedback for a diagnosis, lesson, playbook, risk score, or tool result.
 
@@ -88,7 +106,7 @@ Initial tools:
   - Lists lessons filtered by workspace, environment, category, confidence, or lesson type.
 
 - `fabric_analyze_learning_patterns`
-  - Aggregates repeated issues, high-risk workspaces, recurring policy blockers, and accepted recommendations.
+  - Aggregates repeated issues, high-risk workspaces, recurring policy blockers, repeated task failures, and accepted recommendations.
 
 - `fabric_generate_learned_playbook`
   - Builds a markdown-ready playbook from learned lessons and matching audit evidence.
@@ -103,11 +121,13 @@ Initial tools:
 ## Safety Model
 
 - Learning is enabled by default for local redacted metadata, but can be disabled by policy.
+- Task learning stores structured summaries only. It does not store full chat transcripts.
 - Raw Authorization headers, tokens, secrets, passwords, and client secrets are never stored.
 - The store rejects payloads above a configured maximum size.
 - Tools that write learning data are local-only and do not require production confirmation because they do not touch Fabric.
 - Policy recommendation tools return diffs or suggestions only.
 - Learned playbooks are suggestions. Existing guarded tools still enforce confirmation, target binding, preflight, and production flags.
+- Automatic task-memory capture is limited to explicit task summaries produced by the plugin. Free-form chat memory requires explicit user intent such as "remember this" or an equivalent workflow step.
 
 ## Policy Additions
 
@@ -118,6 +138,9 @@ New policy fields:
 - `learningRetentionDays`
 - `allowLearningEvidenceExport`
 - `minLessonConfidenceForPolicySuggestions`
+- `allowTaskMemory`
+- `allowAutomaticTaskSummaryMemory`
+- `maxTaskMemoryPayloadBytes`
 
 Defaults:
 
@@ -125,6 +148,8 @@ Defaults:
 - evidence export enabled
 - payload size capped
 - policy suggestions require medium confidence or higher
+- task memory enabled
+- automatic task summary memory enabled for plugin-generated task summaries only
 - no automatic cleanup until retention is explicitly configured
 
 ## Error Handling
@@ -132,6 +157,7 @@ Defaults:
 - If SQLite initialization fails, learning tools return a structured diagnostic and the rest of the plugin remains usable.
 - If a payload exceeds the size limit, the tool records a compact summary and reports truncation.
 - If a malformed feedback target is supplied, the tool returns validation errors through the existing MCP error pattern.
+- If a task memory is missing an outcome or lesson, the tool accepts it as low confidence and marks it incomplete.
 - If the DB is locked, tools return a retryable local-state error.
 
 ## Testing
@@ -141,6 +167,9 @@ Unit tests:
 - Schema initializes in a temporary state directory.
 - Redaction removes secrets recursively before insert.
 - Oversized payloads are rejected or summarized.
+- Task memories store structured summaries without raw transcript fields.
+- Similar-task lookup ranks exact workspace/environment matches above generic matches.
+- Next-step recommendations preserve guardrails and never suggest bypassing confirmation, preflight, or production flags.
 - Feedback updates lesson confidence deterministically.
 - Pattern analysis ranks repeated issues by severity, frequency, and recency.
 - Policy suggestions are advisory and never write policy files.
@@ -156,8 +185,8 @@ Smoke tests:
 Documentation updates:
 
 - Tool catalog: Learning Layer section.
-- Security governance: local learning, retention, redaction, and advisory-only guarantees.
-- Operator guide: how to record feedback and reuse learned playbooks.
+- Security governance: local learning, task memory boundaries, retention, redaction, and advisory-only guarantees.
+- Operator guide: how to record task memories, give feedback, and reuse learned playbooks.
 - Roadmap: V5 Governed Self-Learning Operator.
 - Marketplace listing: USP language for governed self-learning.
 
